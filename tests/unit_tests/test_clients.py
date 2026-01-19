@@ -280,9 +280,7 @@ class TestWorkbenchRestClient(unittest.TestCase):
 
         mock_session.get.side_effect = [failed_response, success_response]
 
-        result = self.client._request_with_retry(
-            "GET", "https://example.com/test"
-        )
+        result = self.client._request_with_retry("GET", "https://example.com/test")
 
         self.assertEqual(result["status_code"], 200)
         self.assertEqual(mock_session.get.call_count, 2)

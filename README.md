@@ -1,14 +1,8 @@
 # Vertex AI Workbench Fleet Upgrader
 
-## What This Tool Does
+## Overview
 
-This tool upgrades your Vertex AI Workbench instances automatically. You can upgrade entire fleets of instances across multiple locations, or target one specific instance. It also supports rolling back recently upgraded instances to their previous version.
-
-## Documentation
-
-- **[USAGE.md](USAGE.md)** - Comprehensive user guide with examples and troubleshooting
-- **[STRUCTURE.md](STRUCTURE.md)** - Project structure and development guide
-- **[CHANGES.md](CHANGES.md)** - Recent improvements and test coverage report
+This tool uses Google native Vertex AI Workbench Instance upgrade process and upgrades your Vertex AI Workbench instances automatically. You can upgrade entire fleets of instances across multiple locations, or target one specific instance. It also supports rolling back recently upgraded instances to their previous version.
 
 ## Quick Start
 

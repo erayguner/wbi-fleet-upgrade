@@ -1,4 +1,5 @@
 """Console entry point for the Workbench Fleet Upgrader CLI."""
+
 from __future__ import annotations
 
 import argparse

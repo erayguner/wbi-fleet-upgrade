@@ -72,8 +72,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--rollback-on-failure",
         action="store_true",
         help=(
-            "Attempt rollback if an upgrade fails or times out (upgrade mode "
-            "only)"
+            "Attempt rollback if an upgrade fails or times out (upgrade mode " "only)"
         ),
     )
     parser.add_argument(
@@ -81,8 +80,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=600,
         help=(
-            "Timeout waiting for instance to become ACTIVE after operation "
-            "(seconds)"
+            "Timeout waiting for instance to become ACTIVE after operation " "(seconds)"
         ),
     )
     parser.add_argument(

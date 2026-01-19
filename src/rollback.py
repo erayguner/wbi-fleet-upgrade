@@ -1091,12 +1091,14 @@ class FleetRollback:
                     "duration_seconds": r.duration_seconds,
                     "target_version": r.target_version,
                     "error_message": r.error_message,
-                    "precheck_results": [
-                        check.to_dict()
-                        for check in self.precheck_results.get(r.instance_name, [])
-                    ]
-                    if r.instance_name in self.precheck_results
-                    else [],
+                    "precheck_results": (
+                        [
+                            check.to_dict()
+                            for check in self.precheck_results.get(r.instance_name, [])
+                        ]
+                        if r.instance_name in self.precheck_results
+                        else []
+                    ),
                 }
                 for r in self.results
             ],

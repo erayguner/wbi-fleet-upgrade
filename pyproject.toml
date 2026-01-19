@@ -1,0 +1,41 @@
+[project]
+name = "fleet-upgrade-scripts"
+version = "0.1.0"
+description = "This tool upgrades your Vertex AI Workbench instances automatically."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "google-auth>=2.47.0",
+  "google-auth-httplib2>=0.3.0",
+  "google-api-core>=2.29.0",
+  "google-cloud-notebooks>=1.15.0",
+  "protobuf>=6.33.4",
+  "requests>=2.32.5",
+]
+
+[project.optional-dependencies]
+dev = [
+  "black>=26.1.0",
+  "flake8>=7.3.0",
+  "mypy>=1.19.0",
+  "pylint>=4.0.0",
+  "pytest>=9.0.0",
+  "pytest-cov>=7.0.0",
+  "pytest-mock>=3.15.0",
+  "mock>=5.2.0",
+  "types-protobuf>=5.29.0",
+  "pip-audit>=2.7.0",
+]
+
+[project.scripts]
+workbench-upgrader = "cli:main"
+
+[tool.setuptools]
+py-modules = ["__init__", "cli", "clients", "config", "log_utils", "models", "rollback", "upgrader"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"

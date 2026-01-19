@@ -7,6 +7,11 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   pre-commit:
     name: Run Pre-commit Hooks
@@ -41,6 +46,7 @@ jobs:
 
       - name: Annotate PR with pre-commit results
         if: failure() && github.event_name == 'pull_request'
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |

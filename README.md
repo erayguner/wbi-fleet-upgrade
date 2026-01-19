@@ -1,5 +1,9 @@
 # Vertex AI Workbench Fleet Upgrader
 
+[![Linting and Security](https://github.com/erayguner/wbi-fleet-upgrade/actions/workflows/ci.yml/badge.svg)](https://github.com/erayguner/wbi-fleet-upgrade/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/erayguner/wbi-fleet-upgrade/actions/workflows/codeql.yml/badge.svg)](https://github.com/erayguner/wbi-fleet-upgrade/actions/workflows/codeql.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
 ## Overview
 
 This tool uses Google native Vertex AI Workbench Instance upgrade

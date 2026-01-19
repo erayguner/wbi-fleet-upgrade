@@ -164,21 +164,6 @@ jobs:
       - name: Run pre-commit on all files
         run: pre-commit run --all-files --show-diff-on-failure
 
-      - name: Annotate PR with pre-commit results
-        if: failure() && github.event_name == 'pull_request'
-        continue-on-error: true
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '⚠️ Pre-commit checks failed. ' +
-                'Please run `pre-commit run --all-files` ' +
-                'locally and commit the changes.'
-            })
-
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
@@ -196,8 +181,8 @@ jobs:
           allow-licenses: >-
             MIT, Apache-2.0, BSD-2-Clause,
             BSD-3-Clause, ISC, Python-2.0
-          # Comment on PR with dependency changes
-          comment-summary-in-pr: always
+          # Disable PR comments
+          comment-summary-in-pr: never
 
   dependency-scan:
     name: Python Dependency Scanning
@@ -242,39 +227,3 @@ jobs:
             pip-audit-report.json
             safety-report.json
           retention-days: 30
-
-      - name: Comment on PR with security findings
-        if: always()
-        continue-on-error: true
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            let comment = '## 🔒 Dependency Security Scan Results\n\n';
-
-            try {
-              const pipAudit = fs.readFileSync(
-                'pip-audit-report.json', 'utf8'
-              );
-              const pipAuditData = JSON.parse(pipAudit);
-              const vulnCount = pipAuditData.dependencies?.length || 0;
-
-              if (vulnCount > 0) {
-                comment += `⚠️ **pip-audit found ` +
-                  `${vulnCount} vulnerabilities**\n\n`;
-              } else {
-                comment += '✅ **pip-audit**: ' +
-                  'No vulnerabilities found\n\n';
-              }
-            } catch (e) {
-              comment += '✅ **pip-audit**: Scan completed\n\n';
-            }
-
-            comment += '_For detailed reports, check the workflow artifacts._';
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });

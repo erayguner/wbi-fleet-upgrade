@@ -7,7 +7,7 @@ Workbench Fleet Upgrader project.
 
 ### 🔒 CodeQL Security Analysis (`codeql.yml`)
 
-**Triggers**: Push/PR to main/develop, weekly schedule (Mondays), manual
+**Triggers**: Push/PR to main, weekly schedule (Mondays), manual
 
 Advanced security analysis using GitHub CodeQL:
 
@@ -19,7 +19,7 @@ Advanced security analysis using GitHub CodeQL:
 
 ### 🔍 Static Analysis (`static-analysis.yml`)
 
-**Triggers**: Push/PR to main/develop branches, manual
+**Triggers**: Push/PR to main, manual
 
 Comprehensive static analysis and code quality checks:
 

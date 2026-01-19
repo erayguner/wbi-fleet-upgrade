@@ -1,18 +1,68 @@
-name: Linting and Security
+name: Static Analysis
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
   workflow_dispatch:
 
 env:
   PYTHON_VERSION: "3.11"
 
+permissions:
+  contents: read
+
 jobs:
-  lint:
-    name: Lint and Format Check
+  shellcheck:
+    name: Shell Script Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: '.'
+          severity: warning
+          format: gcc
+
+      - name: Verify shell scripts are executable
+        run: |
+          echo "Checking shell script permissions..."
+          for script in *.sh; do
+            if [ -f "$script" ]; then
+              if [ ! -x "$script" ]; then
+                echo "❌ $script is not executable"
+                exit 1
+              else
+                echo "✅ $script is executable"
+              fi
+            fi
+          done
+
+      - name: Check bash syntax
+        run: |
+          echo "Checking shell script syntax..."
+          for script in *.sh; do
+            if [ -f "$script" ]; then
+              echo "Checking $script..."
+              bash -n "$script"
+              echo "✅ $script syntax is valid"
+            fi
+          done
+
+      - name: Run shfmt for formatting check
+        uses: luizm/action-sh-checker@master
+        with:
+          sh_checker_comment: true
+          sh_checker_exclude: ".git"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  python-lint:
+    name: Python Linting and Formatting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -50,7 +100,7 @@ jobs:
           mypy src/ main.py --ignore-missing-imports --no-strict-optional
 
   security:
-    name: Security Scan
+    name: Security Scanning
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

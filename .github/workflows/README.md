@@ -5,40 +5,9 @@ Workbench Fleet Upgrader project.
 
 ## Workflows Overview
 
-### 🔄 CI Pipeline (`ci.yml`)
+### 🔒 CodeQL Security Analysis (`codeql.yml`)
 
-**Triggers**: Push/PR to main/develop branches
-
-Comprehensive continuous integration pipeline that runs:
-
-- **Lint Job**: Code quality checks
-  - Black formatting validation
-  - Flake8 linting
-  - Pylint code analysis
-  - MyPy type checking
-
-- **Test Job**: Multi-version testing
-  - Tests on Python 3.11, 3.12, and 3.13
-  - Pytest with coverage reporting
-  - 80% minimum coverage threshold
-  - Coverage reports uploaded to Codecov
-  - HTML coverage reports as artifacts
-
-- **Security Job**: Security scanning
-  - pip-audit for dependency vulnerabilities
-  - Gitleaks for secret detection
-
-- **Build Job**: Package building
-  - Builds Python wheel and source distribution
-  - Uploads build artifacts
-
-- **Integration Check Job**: End-to-end validation
-  - Installs built package
-  - Tests CLI functionality
-
-### 🔒 CodeQL Analysis (`codeql.yml`)
-
-**Triggers**: Push/PR to main/develop, weekly schedule (Mondays), manual
+**Triggers**: Push/PR to main, weekly schedule (Mondays), manual
 
 Advanced security analysis using GitHub CodeQL:
 
@@ -48,78 +17,62 @@ Advanced security analysis using GitHub CodeQL:
 - Scheduled weekly scans to catch newly discovered vulnerabilities
 - Results uploaded to GitHub Security tab
 
-### ✨ Pre-commit Checks (`pre-commit.yml`)
+### 🔍 Static Analysis (`static-analysis.yml`)
 
-**Triggers**: Push/PR to main/develop branches
+**Triggers**: Push/PR to main, manual
 
-Validates code against pre-commit hooks:
+Comprehensive static analysis and code quality checks:
 
-- Runs all pre-commit hooks defined in `.pre-commit-config.yaml`
-- Includes: black, shfmt, gitleaks, yamllint, markdownlint
-- Caches pre-commit environments for faster runs
-- Comments on PR if checks fail
-
-### 📦 Dependency Review (`dependency-review.yml`)
-
-**Triggers**: Pull requests to main/develop
-
-Reviews dependency changes in PRs:
-
-- **Dependency Review Job**:
-  - Checks for vulnerable dependencies
-  - Validates licenses (MIT, Apache-2.0, BSD, ISC, Python-2.0)
-  - Fails on critical severity vulnerabilities
-  - Comments summary on PR
-
-- **Dependency Scan Job**:
-  - Runs pip-audit for vulnerability scanning
-  - Runs Safety check for known security issues
-  - Uploads detailed security reports as artifacts
-  - Comments scan results on PR
-
-### 🐚 Shell Script Validation (`shellcheck.yml`)
-
-**Triggers**: Push/PR affecting .sh/.bash files
-
-Validates bash scripts (wb-upgrade.sh, wb-rollback.sh):
-
-- **ShellCheck Job**:
-  - Lints shell scripts for common issues
-  - Checks for best practices
+- **Shell Script Validation**:
+  - ShellCheck linting for bash scripts
   - Verifies scripts are executable
-
-- **Syntax Check Job**:
   - Validates bash syntax
   - Runs shfmt for formatting validation
 
-### 🚀 Release (`release.yml`)
+- **Python Linting and Formatting**:
+  - Black formatting validation
+  - Flake8 linting for style and errors
+  - Pylint code analysis
+  - MyPy type checking
 
-**Triggers**: Tags matching v*.*.*, manual workflow dispatch
+- **Security Scanning**:
+  - pip-audit for dependency vulnerabilities
+  - Gitleaks for secret detection
 
-Automates release process:
+## Automated Dependency Management
 
-- Builds Python package (wheel and sdist)
-- Validates package with twine
-- Creates GitHub Release with auto-generated notes
-- Uploads distribution files to release
-- Stores artifacts for 90 days
+### 🤖 Dependabot (`.github/dependabot.yml`)
+
+**Schedule**: Weekly on Mondays at 09:00 UTC
+
+Automated dependency updates for:
+
+- **Python Dependencies (pip)**:
+  - Weekly scans for outdated packages
+  - Groups minor and patch updates together
+  - Maximum 10 open PRs at once
+  - Auto-labeled with `dependencies` and `python`
+  - Commit message prefix: `deps`
+
+- **GitHub Actions**:
+  - Weekly scans for action updates
+  - Groups all action updates together
+  - Maximum 5 open PRs at once
+  - Auto-labeled with `dependencies` and `github-actions`
+  - Commit message prefix: `deps`
 
 ## Status Badges
 
 Add these badges to your README.md:
 
 ```markdown
-![CI](https://github.com/YOUR_ORG/wbi-fleet-upgrade/workflows/CI/badge.svg)
 ![CodeQL](https://github.com/YOUR_ORG/wbi-fleet-upgrade/workflows/CodeQL%20Security%20Analysis/badge.svg)
-![Pre-commit](https://github.com/YOUR_ORG/wbi-fleet-upgrade/workflows/Pre-commit%20Checks/badge.svg)
-[![codecov](https://codecov.io/gh/YOUR_ORG/wbi-fleet-upgrade/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_ORG/wbi-fleet-upgrade)
+![Static Analysis](https://github.com/YOUR_ORG/wbi-fleet-upgrade/workflows/Static%20Analysis/badge.svg)
 ```
 
 ## Required Secrets
 
-Most workflows work out-of-the-box with `GITHUB_TOKEN`. Optional:
-
-- `CODECOV_TOKEN`: For Codecov integration (recommended for private repos)
+Workflows work out-of-the-box with `GITHUB_TOKEN`. No additional secrets required.
 
 ## Local Development
 
@@ -192,20 +145,21 @@ shellcheck *.sh
 
 ### Updating Python Version
 
-To add support for new Python versions, update the matrix in `ci.yml`:
-
-```yaml
-matrix:
-  python-version: ["3.11", "3.12", "3.13", "3.14"]  # Add new version
-```
-
-### Adjusting Coverage Threshold
-
-Modify the `MIN_COVERAGE` environment variable in `ci.yml`:
+To update the Python version used in workflows, modify the `PYTHON_VERSION`
+environment variable in `static-analysis.yml`:
 
 ```yaml
 env:
-  MIN_COVERAGE: 85  # Increase from 80
+  PYTHON_VERSION: "3.12"  # Update to new version
+```
+
+Also update in `codeql.yml`:
+
+```yaml
+- name: Set up Python
+  uses: actions/setup-python@v5
+  with:
+    python-version: '3.12'  # Update to new version
 ```
 
 ### Customizing CodeQL Queries
@@ -214,6 +168,17 @@ Edit the queries in `codeql.yml`:
 
 ```yaml
 queries: security-extended,security-and-quality  # Modify query suites
+```
+
+### Adjusting Dependabot Schedule
+
+Modify the schedule in `.github/dependabot.yml`:
+
+```yaml
+schedule:
+  interval: "daily"  # Change from "weekly" to "daily"
+  day: "monday"      # Remove for daily schedule
+  time: "09:00"      # Keep preferred time
 ```
 
 ## CI/CD Best Practices
@@ -227,12 +192,6 @@ queries: security-extended,security-and-quality  # Modify query suites
 
 ## Troubleshooting
 
-### Workflow Fails on Coverage
-
-- Check if new code is covered by tests
-- Review `htmlcov/` artifact for missing coverage
-- Add tests to reach 80% threshold
-
 ### Pre-commit Hook Fails
 
 - Run `pre-commit run --all-files` locally
@@ -244,12 +203,19 @@ queries: security-extended,security-and-quality  # Modify query suites
 - Review the security report in workflow artifacts
 - Update vulnerable packages in `requirements.txt`
 - Test thoroughly after updates
+- Review Dependabot PRs weekly and merge updates
 
 ### ShellCheck Warnings
 
 - Review ShellCheck output
 - Fix issues or add `# shellcheck disable=SCXXXX` if intentional
 - Ensure scripts remain executable (`chmod +x *.sh`)
+
+### Linting or Formatting Failures
+
+- Run linters locally (black, flake8, pylint, mypy)
+- Fix issues reported by the tools
+- Ensure code follows project style guidelines
 
 ## Contributing
 
@@ -265,6 +231,6 @@ When adding new workflows:
 
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [CodeQL Documentation](https://codeql.github.com/docs/)
+- [Dependabot Documentation](https://docs.github.com/en/code-security/dependabot)
 - [Pre-commit Documentation](https://pre-commit.com/)
-- [pytest Documentation](https://docs.pytest.org/)
 - [ShellCheck Wiki](https://www.shellcheck.net/wiki/)

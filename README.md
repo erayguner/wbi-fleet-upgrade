@@ -120,24 +120,33 @@ python3 main.py --project <project-id> --locations LOCATION \
 
 ### All Options
 
-```
+```text
 --project <project-id>              Your GCP project ID (required)
 --locations LOC1 LOC2          Zone locations to check (required)
---instance INSTANCE_ID         Specific instance to upgrade or roll back (optional)
---rollback                     Rollback mode: revert to previous version (instead of upgrade)
---dry-run                      Check without upgrading or rolling back
---max-parallel NUM             How many to upgrade/rollback at once (default: 10)
---timeout SECONDS              How long to wait per operation (default: 7200)
---poll-interval SECONDS        How often to check progress (default: 20)
---rollback-on-failure          In upgrade mode, roll back if upgrade fails
---health-check-timeout SECS    How long to wait for health check (default: 800)
---stagger-delay SECONDS        Delay between starting operations (default: 5.0)
+--instance INSTANCE_ID         Specific instance to upgrade or
+                               roll back (optional)
+--rollback                     Rollback mode: revert to previous
+                               version (instead of upgrade)
+--dry-run                      Check without upgrading or rolling
+                               back
+--max-parallel NUM             How many to upgrade/rollback at
+                               once (default: 10)
+--timeout SECONDS              How long to wait per operation
+                               (default: 7200)
+--poll-interval SECONDS        How often to check progress
+                               (default: 20)
+--rollback-on-failure          In upgrade mode, roll back if
+                               upgrade fails
+--health-check-timeout SECS    How long to wait for health check
+                               (default: 800)
+--stagger-delay SECONDS        Delay between starting operations
+                               (default: 5.0)
 --verbose                      Show detailed output
 ```
 
 ## Project Structure
 
-```
+```text
 /
 ├── fleet_upgrader/         Main Python package
 │   ├── clients.py          API client for Workbench

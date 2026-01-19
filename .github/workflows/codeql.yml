@@ -46,16 +46,14 @@ jobs:
           fi
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           # Specify additional queries for enhanced security scanning
           queries: security-extended,security-and-quality
-          # Configure CodeQL to analyze Python packages
-          setup-python-dependencies: false
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{matrix.language}}"
           upload: true

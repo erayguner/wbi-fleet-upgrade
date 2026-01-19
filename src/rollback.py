@@ -21,7 +21,6 @@ from typing import Dict, List, Optional, Tuple, Set
 from clients import WorkbenchRestClient
 from models import InstanceRef, TrackedOp, UpgradeResult
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -11,7 +11,6 @@ from google.auth.transport.requests import AuthorizedSession
 
 from models import InstanceRef
 
-
 logger = logging.getLogger(__name__)
 
 # v2 API for Workbench Instances

@@ -39,23 +39,6 @@ Comprehensive static analysis and code quality checks:
   - pip-audit for dependency vulnerabilities
   - Gitleaks for secret detection
 
-- **Pre-commit Hooks**:
-  - Runs all pre-commit hooks from `.pre-commit-config.yaml`
-  - Caches pre-commit environments for faster runs
-  - Comments on PR if checks fail
-
-- **Dependency Review** (PR only):
-  - Reviews dependency changes in pull requests
-  - Validates licenses (MIT, Apache-2.0, BSD, ISC, Python-2.0)
-  - Fails on critical severity vulnerabilities
-  - Comments summary on PR
-
-- **Python Dependency Scanning** (PR only):
-  - Runs pip-audit for vulnerability scanning
-  - Runs Safety check for known security issues
-  - Uploads detailed security reports as artifacts
-  - Comments scan results on PR
-
 ## Automated Dependency Management
 
 ### 🤖 Dependabot (`.github/dependabot.yml`)

@@ -23,7 +23,9 @@ jobs:
           # Fail the build on critical vulnerabilities
           fail-on-severity: critical
           # Allow licenses commonly used in Python projects
-          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Python-2.0
+          allow-licenses: >-
+            MIT, Apache-2.0, BSD-2-Clause,
+            BSD-3-Clause, ISC, Python-2.0
           # Comment on PR with dependency changes
           comment-summary-in-pr: always
 
@@ -80,14 +82,18 @@ jobs:
             let comment = '## 🔒 Dependency Security Scan Results\n\n';
 
             try {
-              const pipAudit = fs.readFileSync('pip-audit-report.json', 'utf8');
+              const pipAudit = fs.readFileSync(
+                'pip-audit-report.json', 'utf8'
+              );
               const pipAuditData = JSON.parse(pipAudit);
               const vulnCount = pipAuditData.dependencies?.length || 0;
 
               if (vulnCount > 0) {
-                comment += `⚠️ **pip-audit found ${vulnCount} vulnerabilities**\n\n`;
+                comment += `⚠️ **pip-audit found ` +
+                  `${vulnCount} vulnerabilities**\n\n`;
               } else {
-                comment += '✅ **pip-audit**: No vulnerabilities found\n\n';
+                comment += '✅ **pip-audit**: ' +
+                  'No vulnerabilities found\n\n';
               }
             } catch (e) {
               comment += '✅ **pip-audit**: Scan completed\n\n';

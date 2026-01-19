@@ -1,6 +1,7 @@
 # GitHub Actions Workflows
 
-This directory contains GitHub Actions workflows for the Vertex AI Workbench Fleet Upgrader project.
+This directory contains GitHub Actions workflows for the Vertex AI
+Workbench Fleet Upgrader project.
 
 ## Workflows Overview
 

@@ -10,12 +10,12 @@
 #   terraform apply -var="project_id=YOUR_PROJECT_ID"
 
 terraform {
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.14.0"
 
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = ">= 4.0.0"
+      version = ">= 7.14.1"
     }
   }
 }
@@ -49,6 +49,13 @@ resource "google_project_iam_member" "storage_object_creator" {
   count   = var.enable_artifact_storage ? 1 : 0
   project = var.project_id
   role    = "roles/storage.objectCreator"
+  member  = "serviceAccount:${google_service_account.wbi_cloudbuild.email}"
+}
+
+# Role: Storage Object Viewer - Required for Cloud Build to pull source code
+resource "google_project_iam_member" "storage_object_viewer" {
+  project = var.project_id
+  role    = "roles/storage.objectViewer"
   member  = "serviceAccount:${google_service_account.wbi_cloudbuild.email}"
 }
 

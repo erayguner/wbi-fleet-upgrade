@@ -17,7 +17,6 @@ timeout: 7200s  # 2 hours max build time
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: E2_HIGHCPU_8
 
 # Use dedicated service account for least-privilege access
 # Create via: terraform -chdir=terraform/cloudbuild-iam apply
@@ -51,13 +50,11 @@ substitutions:
   _JSON_LOGGING: 'true'
   _VERBOSE: 'false'
   
-  # Python version (Cloud Build uses python image)
-  _PYTHON_VERSION: '3.11'
 
 steps:
-  # Step 1: Validate required substitutions
+  # Step 1: Validate required substitutions (Pinned image)
   - id: 'validate-inputs'
-    name: 'gcr.io/cloud-builders/gcloud'
+    name: 'gcr.io/cloud-builders/gcloud@sha256:fca111b5c9f7f7e580d75e42e29bd4603a1e9785182cddff617fa8c746184473'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -81,27 +78,22 @@ steps:
           exit 1
         fi
         
+        # Enforce execution in europe-west2
+        if [[ "${LOCATION}" != "europe-west2" ]]; then
+          echo '{"severity":"ERROR","message":"Build must run in europe-west2 region. Current location: ${LOCATION}","timestamp":"'"$(date -Iseconds)"'"}'
+          exit 1
+        fi
+        
         echo '{"severity":"INFO","message":"Validation passed","operation":"${_OPERATION}","project":"${_PROJECT_ID}","locations":"${_LOCATIONS}","dry_run":"${_DRY_RUN}","timestamp":"'"$(date -Iseconds)"'"}'
 
-  # Step 2: Setup Python environment and install dependencies
-  - id: 'setup-python'
-    name: 'python:${_PYTHON_VERSION}-slim'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        set -euo pipefail
-        
-        echo '{"severity":"INFO","message":"Setting up Python environment","timestamp":"'"$(date -Iseconds)"'"}'
-        
-        pip install --quiet --upgrade pip
-        pip install --quiet -r requirements.txt
-        
-        echo '{"severity":"INFO","message":"Python dependencies installed","timestamp":"'"$(date -Iseconds)"'"}'
+  # Step 2: Build Custom Image (Pre-baked environment)
+  - id: 'build-image'
+    name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/${_PROJECT_ID}/wbi-fleet-upgrader:latest', '.']
 
-  # Step 3: Run the operation (upgrade or rollback)
+  # Step 3: Run the operation using Custom Image
   - id: 'run-operation'
-    name: 'python:${_PYTHON_VERSION}-slim'
+    name: 'gcr.io/${_PROJECT_ID}/wbi-fleet-upgrader:latest'
     entrypoint: 'bash'
     env:
       - 'GCP_PROJECT_ID=${_PROJECT_ID}'
@@ -121,15 +113,12 @@ steps:
       - |
         set -euo pipefail
         
-        # Install dependencies (pip cache from previous step not available in new container)
-        pip install --quiet -r requirements.txt
-        
         timestamp() { date -Iseconds; }
         
         log_json() {
-          local severity="$1"
-          local message="$2"
-          echo "{\"severity\":\"$severity\",\"message\":\"$message\",\"timestamp\":\"$(timestamp)\"}"
+          local severity="$$1"
+          local message="$$2"
+          echo "{\"severity\":\"$$severity\",\"message\":\"$$message\",\"timestamp\":\"$$(timestamp)\"}"
         }
         
         log_json "INFO" "Starting ${_OPERATION} operation"
@@ -168,48 +157,39 @@ steps:
           PYTHON_ARGS+=("--verbose")
         fi
         
-        log_json "INFO" "Executing: python3 main.py ${PYTHON_ARGS[*]}"
+        log_json "INFO" "Executing: python3 main.py $${PYTHON_ARGS[*]}"
         
         # Execute the operation
-        if python3 main.py "${PYTHON_ARGS[@]}"; then
+        if python3 main.py "$${PYTHON_ARGS[@]}"; then
           log_json "INFO" "${_OPERATION} operation completed successfully"
         else
           EXIT_CODE=$?
-          log_json "ERROR" "${_OPERATION} operation failed with exit code: $EXIT_CODE"
-          exit $EXIT_CODE
+          log_json "ERROR" "${_OPERATION} operation failed with exit code: $$EXIT_CODE"
+          exit $$EXIT_CODE
         fi
 
-  # Step 4: Upload reports to Cloud Storage (optional)
+  # Step 4: Upload reports to Cloud Storage (Pinned image)
   - id: 'upload-reports'
-    name: 'gcr.io/cloud-builders/gsutil'
+    name: 'gcr.io/cloud-builders/gsutil@sha256:f0b63c86624f789909d3c9f2a910efd5187d096a9b55afa307c640158f71b938'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         set -euo pipefail
         
-        # Only upload if reports exist and a bucket is configured
+        # Only upload if reports exist
         REPORT_PATTERN="${_OPERATION}-report-*.json"
         LOG_FILE="workbench-${_OPERATION}.log"
+        TARGET_BUCKET="gs://${_PROJECT_ID}-cloudbuild-artifacts/wbi-fleet-upgrade/${BUILD_ID}/"
         
-        if ls $REPORT_PATTERN 1> /dev/null 2>&1; then
+        if ls $$REPORT_PATTERN 1> /dev/null 2>&1; then
           echo '{"severity":"INFO","message":"Found report files to archive","timestamp":"'"$(date -Iseconds)"'"}'
           
-          # Archive to build artifacts directory
-          mkdir -p /workspace/artifacts
-          cp $REPORT_PATTERN /workspace/artifacts/ 2>/dev/null || true
-          cp $LOG_FILE /workspace/artifacts/ 2>/dev/null || true
+          # Upload to GCS
+          gsutil cp $$REPORT_PATTERN $$TARGET_BUCKET || true
+          gsutil cp $$LOG_FILE $$TARGET_BUCKET || true
           
-          echo '{"severity":"INFO","message":"Reports archived to /workspace/artifacts","timestamp":"'"$(date -Iseconds)"'"}'
+          echo '{"severity":"INFO","message":"Reports uploaded to '"$$TARGET_BUCKET"'","timestamp":"'"$(date -Iseconds)"'"}'
         else
           echo '{"severity":"INFO","message":"No report files found to archive","timestamp":"'"$(date -Iseconds)"'"}'
         fi
-
-artifacts:
-  objects:
-    location: 'gs://${PROJECT_ID}-cloudbuild-artifacts/wbi-fleet-upgrade/${BUILD_ID}/'
-    paths:
-      - 'upgrade-report-*.json'
-      - 'rollback-report-*.json'
-      - 'workbench-upgrade.log'
-      - 'workbench-rollback.log'

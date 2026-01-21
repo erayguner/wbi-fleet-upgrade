@@ -37,21 +37,21 @@ terraform apply \
 
 ```bash
 gcloud builds submit --config=cloudbuild.yaml \
-  --substitutions=_PROJECT_ID=YOUR_PROJECT_ID,_LOCATIONS="europe-west2-a",_OPERATION=upgrade,_DRY_RUN=true
+  --substitutions=_PROJECT_ID=YOUR_PROJECT_ID,_LOCATIONS="europe-west2-a europe-west2-b europe-west2-c",_OPERATION=upgrade,_DRY_RUN=true
 ```
 
 ### 3. Run an Actual Upgrade
 
 ```bash
 gcloud builds submit --config=cloudbuild.yaml \
-  --substitutions=_PROJECT_ID=YOUR_PROJECT_ID,_LOCATIONS="europe-west2-a europe-west2-b",_OPERATION=upgrade,_DRY_RUN=false,_ROLLBACK_ON_FAILURE=true
+  --substitutions=_PROJECT_ID=YOUR_PROJECT_ID,_LOCATIONS="europe-west2-a europe-west2-b europe-west2-c",_OPERATION=upgrade,_DRY_RUN=false,_ROLLBACK_ON_FAILURE=true
 ```
 
 ### 4. Run a Rollback
 
 ```bash
 gcloud builds submit --config=cloudbuild.yaml \
-  --substitutions=_PROJECT_ID=YOUR_PROJECT_ID,_LOCATIONS="europe-west2-a",_OPERATION=rollback,_DRY_RUN=false
+  --substitutions=_PROJECT_ID=YOUR_PROJECT_ID,_LOCATIONS="europe-west2-a europe-west2-b europe-west2-c",_OPERATION=rollback,_DRY_RUN=false
 ```
 
 ---

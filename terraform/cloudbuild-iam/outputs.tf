@@ -1,5 +1,4 @@
 # Outputs for WBI Cloud Build IAM Configuration
-
 output "service_account_email" {
   description = "Email of the WBI Cloud Build service account"
   value       = google_service_account.wbi_cloudbuild.email

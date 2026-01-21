@@ -360,5 +360,5 @@ echo "  - Cloud Build: docs/cloud-build.md"
 echo "  - Contributing: CONTRIBUTING.md"
 echo ""
 
-log_success "Happy upgrading! 🚀"
+log_success "You're all set! Trigger upgrades via Cloud Build when ready. 🚀"
 echo ""

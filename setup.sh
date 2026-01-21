@@ -58,31 +58,31 @@ DEV_MODE=false
 
 while [[ $# -gt 0 ]]; do
 	case $1 in
-		--with-terraform)
-			WITH_TERRAFORM=true
-			shift
-			;;
-		--dev)
-			DEV_MODE=true
-			shift
-			;;
-		--help)
-			echo "WBI Fleet Upgrade & Rollback Setup Script"
-			echo ""
-			echo "Usage: ./setup.sh [OPTIONS]"
-			echo ""
-			echo "Options:"
-			echo "  --with-terraform    Setup IAM using Terraform"
-			echo "  --dev              Install development dependencies"
-			echo "  --help             Show this help message"
-			echo ""
-			exit 0
-			;;
-		*)
-			log_error "Unknown option: $1"
-			echo "Use --help for usage information"
-			exit 1
-			;;
+	--with-terraform)
+		WITH_TERRAFORM=true
+		shift
+		;;
+	--dev)
+		DEV_MODE=true
+		shift
+		;;
+	--help)
+		echo "WBI Fleet Upgrade & Rollback Setup Script"
+		echo ""
+		echo "Usage: ./setup.sh [OPTIONS]"
+		echo ""
+		echo "Options:"
+		echo "  --with-terraform    Setup IAM using Terraform"
+		echo "  --dev              Install development dependencies"
+		echo "  --help             Show this help message"
+		echo ""
+		exit 0
+		;;
+	*)
+		log_error "Unknown option: $1"
+		echo "Use --help for usage information"
+		exit 1
+		;;
 	esac
 done
 
@@ -94,7 +94,7 @@ echo ""
 # Step 1: Check Python version
 log_section "Step 1: Python Environment"
 
-if ! command -v python3 &> /dev/null; then
+if ! command -v python3 &>/dev/null; then
 	log_error "Python 3 is not installed. Please install Python 3.11 or newer."
 	exit 1
 fi
@@ -126,14 +126,14 @@ fi
 log_info "Installing Python dependencies..."
 
 # Check if pip is available
-if ! command -v pip3 &> /dev/null && ! command -v pip &> /dev/null; then
+if ! command -v pip3 &>/dev/null && ! command -v pip &>/dev/null; then
 	log_error "pip is not installed. Please install pip first."
 	exit 1
 fi
 
 # Use pip3 if available, otherwise pip
 PIP_CMD="pip3"
-if ! command -v pip3 &> /dev/null; then
+if ! command -v pip3 &>/dev/null; then
 	PIP_CMD="pip"
 fi
 
@@ -162,7 +162,7 @@ fi
 # Step 3: Check Google Cloud SDK
 log_section "Step 3: Google Cloud SDK"
 
-if ! command -v gcloud &> /dev/null; then
+if ! command -v gcloud &>/dev/null; then
 	log_error "Google Cloud SDK (gcloud) is not installed."
 	log_info "Install it from: https://cloud.google.com/sdk/docs/install"
 	exit 1
@@ -240,7 +240,7 @@ fi
 if $WITH_TERRAFORM; then
 	log_section "Step 7: Terraform IAM Setup"
 
-	if ! command -v terraform &> /dev/null; then
+	if ! command -v terraform &>/dev/null; then
 		log_error "Terraform is not installed."
 		log_info "Install it from: https://www.terraform.io/downloads"
 	else
@@ -308,7 +308,7 @@ else
 fi
 
 # Test CLI
-if python3 main.py --help > /dev/null 2>&1; then
+if python3 main.py --help >/dev/null 2>&1; then
 	log_success "CLI tool verified"
 else
 	log_error "CLI tool verification failed"
@@ -317,7 +317,7 @@ fi
 # Run tests if in dev mode
 if $DEV_MODE; then
 	log_info "Running tests..."
-	if command -v pytest &> /dev/null; then
+	if command -v pytest &>/dev/null; then
 		if pytest tests/ -v --tb=short 2>&1 | tail -20; then
 			log_success "Tests passed"
 		else

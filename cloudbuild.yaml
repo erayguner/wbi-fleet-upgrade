@@ -1,17 +1,27 @@
 # Cloud Build Configuration for Vertex AI Workbench Fleet Upgrade/Rollback
 #
-# This configuration supports:
+# This configuration provides a production-ready CI/CD pipeline for WBI operations with:
+# - Comprehensive input validation and error handling
 # - Upgrade and rollback operations via _OPERATION substitution
-# - Dry-run mode (default: true for safety)
-# - Structured JSON logging
-# - Parallel execution control
+# - Safe-by-default: dry-run mode enabled unless explicitly disabled
+# - Structured JSON logging for Cloud Logging integration
+# - Parallel execution control to prevent API throttling
 # - Dedicated service account for least-privilege access
+# - Automatic artifact archiving to Cloud Storage
+# - Health checks and operation monitoring
 #
-# Usage:
+# Quick Start:
+#   # Dry-run upgrade (safe to test)
 #   gcloud builds submit --config=cloudbuild.yaml \
-#     --substitutions=_PROJECT_ID=my-project,_LOCATIONS="europe-west2-a",_OPERATION=upgrade,_DRY_RUN=true
+#     --substitutions=_PROJECT_ID=my-project,_LOCATIONS="europe-west2-a"
 #
-# See docs/cloud-build.md for detailed documentation.
+#   # Actual upgrade with rollback protection
+#   gcloud builds submit --config=cloudbuild.yaml \
+#     --substitutions=_PROJECT_ID=my-project,_LOCATIONS="europe-west2-a",\
+#_DRY_RUN=false,_ROLLBACK_ON_FAILURE=true
+#
+# Documentation: docs/cloud-build.md
+# Operations Guide: OPERATIONS.md
 
 timeout: 7200s  # 2 hours max build time
 
@@ -55,7 +65,7 @@ substitutions:
   _PYTHON_VERSION: '3.11'
 
 steps:
-  # Step 1: Validate required substitutions
+  # Step 1: Validate required substitutions and environment
   - id: 'validate-inputs'
     name: 'gcr.io/cloud-builders/gcloud'
     entrypoint: 'bash'
@@ -63,25 +73,100 @@ steps:
       - '-c'
       - |
         set -euo pipefail
-        
-        echo '{"severity":"INFO","message":"Validating build inputs","timestamp":"'"$(date -Iseconds)"'"}'
-        
+
+        # Structured logging helper
+        log_json() {
+          local severity="$1"
+          local message="$2"
+          local extras="${3:-}"
+          echo "{\"severity\":\"$severity\",\"message\":\"$message\",\"timestamp\":\"$(date -Iseconds)\"${extras:+,$extras}}"
+        }
+
+        log_json "INFO" "🔍 Validating Cloud Build configuration and inputs"
+
+        # Validation error count
+        VALIDATION_ERRORS=0
+
+        # Required: PROJECT_ID
         if [[ -z "${_PROJECT_ID}" ]]; then
-          echo '{"severity":"ERROR","message":"_PROJECT_ID is required","timestamp":"'"$(date -Iseconds)"'"}'
-          exit 1
+          log_json "ERROR" "❌ VALIDATION FAILED: _PROJECT_ID is required" \
+            "\"help\":\"Add --substitutions=_PROJECT_ID=your-project-id\""
+          VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+        else
+          log_json "INFO" "✓ Project ID: ${_PROJECT_ID}"
         fi
-        
+
+        # Required: LOCATIONS
         if [[ -z "${_LOCATIONS}" ]]; then
-          echo '{"severity":"ERROR","message":"_LOCATIONS is required","timestamp":"'"$(date -Iseconds)"'"}'
-          exit 1
+          log_json "ERROR" "❌ VALIDATION FAILED: _LOCATIONS is required" \
+            "\"help\":\"Add --substitutions=_LOCATIONS=\\\"zone1 zone2\\\"\""
+          VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+        else
+          # Validate location format
+          LOCATION_COUNT=$(echo "${_LOCATIONS}" | wc -w)
+          log_json "INFO" "✓ Locations: ${_LOCATIONS} (${LOCATION_COUNT} zone(s))"
+
+          # Warn if many locations
+          if [[ $LOCATION_COUNT -gt 5 ]]; then
+            log_json "WARNING" "⚠️  Many locations specified (${LOCATION_COUNT}). Consider batching operations."
+          fi
         fi
-        
+
+        # Validate OPERATION
         if [[ "${_OPERATION}" != "upgrade" && "${_OPERATION}" != "rollback" ]]; then
-          echo '{"severity":"ERROR","message":"_OPERATION must be upgrade or rollback","timestamp":"'"$(date -Iseconds)"'"}'
+          log_json "ERROR" "❌ VALIDATION FAILED: _OPERATION must be 'upgrade' or 'rollback', got '${_OPERATION}'" \
+            "\"help\":\"Set --substitutions=_OPERATION=upgrade or _OPERATION=rollback\""
+          VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+        else
+          log_json "INFO" "✓ Operation: ${_OPERATION}"
+        fi
+
+        # Validate DRY_RUN (warn if disabled)
+        if [[ "${_DRY_RUN}" != "true" && "${_DRY_RUN}" != "false" ]]; then
+          log_json "ERROR" "❌ VALIDATION FAILED: _DRY_RUN must be 'true' or 'false', got '${_DRY_RUN}'"
+          VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+        elif [[ "${_DRY_RUN}" == "false" ]]; then
+          log_json "WARNING" "⚠️  DRY_RUN is DISABLED - actual changes will be made!" \
+            "\"operation\":\"${_OPERATION}\",\"project\":\"${_PROJECT_ID}\""
+        else
+          log_json "INFO" "✓ Dry-run mode: enabled (safe mode - no changes will be made)"
+        fi
+
+        # Validate numeric parameters
+        if ! [[ "${_MAX_PARALLEL}" =~ ^[0-9]+$ ]] || [[ "${_MAX_PARALLEL}" -lt 1 ]]; then
+          log_json "ERROR" "❌ VALIDATION FAILED: _MAX_PARALLEL must be a positive integer, got '${_MAX_PARALLEL}'"
+          VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+        elif [[ "${_MAX_PARALLEL}" -gt 50 ]]; then
+          log_json "WARNING" "⚠️  MAX_PARALLEL is very high (${_MAX_PARALLEL}). May cause API throttling."
+        fi
+
+        if ! [[ "${_TIMEOUT}" =~ ^[0-9]+$ ]] || [[ "${_TIMEOUT}" -lt 60 ]]; then
+          log_json "ERROR" "❌ VALIDATION FAILED: _TIMEOUT must be >= 60 seconds, got '${_TIMEOUT}'"
+          VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
+        fi
+
+        # Check for conflicting options
+        if [[ "${_OPERATION}" == "rollback" && "${_ROLLBACK_ON_FAILURE}" == "true" ]]; then
+          log_json "WARNING" "⚠️  ROLLBACK_ON_FAILURE ignored in rollback mode (only applicable to upgrades)"
+        fi
+
+        # Exit if validation errors
+        if [[ $VALIDATION_ERRORS -gt 0 ]]; then
+          log_json "ERROR" "❌ Validation failed with ${VALIDATION_ERRORS} error(s). Build aborted." \
+            "\"help\":\"Review error messages above and fix configuration\""
           exit 1
         fi
-        
-        echo '{"severity":"INFO","message":"Validation passed","operation":"${_OPERATION}","project":"${_PROJECT_ID}","locations":"${_LOCATIONS}","dry_run":"${_DRY_RUN}","timestamp":"'"$(date -Iseconds)"'"}'
+
+        # Success summary
+        log_json "INFO" "✅ All validations passed. Build configuration is valid." \
+          "\"operation\":\"${_OPERATION}\",\"project\":\"${_PROJECT_ID}\",\"locations\":\"${_LOCATIONS}\",\"dry_run\":\"${_DRY_RUN}\",\"max_parallel\":\"${_MAX_PARALLEL}\""
+
+        # Additional information
+        if [[ "${_INSTANCE_ID}" ]]; then
+          log_json "INFO" "🎯 Single instance mode: targeting ${_INSTANCE_ID}"
+        else
+          log_json "INFO" "🌍 Fleet mode: targeting all instances in specified locations"
+        fi
 
   # Step 2: Setup Python environment and install dependencies
   - id: 'setup-python'
@@ -116,25 +201,54 @@ steps:
       - 'ROLLBACK_ON_FAILURE=${_ROLLBACK_ON_FAILURE}'
       - 'JSON_LOGGING=${_JSON_LOGGING}'
       - 'VERBOSE=${_VERBOSE}'
+      - 'BUILD_ID=${BUILD_ID}'
+      - 'PROJECT_ID=${PROJECT_ID}'
     args:
       - '-c'
       - |
         set -euo pipefail
-        
-        # Install dependencies (pip cache from previous step not available in new container)
-        pip install --quiet -r requirements.txt
-        
+
+        # Structured logging helpers
         timestamp() { date -Iseconds; }
-        
+
         log_json() {
           local severity="$1"
           local message="$2"
-          echo "{\"severity\":\"$severity\",\"message\":\"$message\",\"timestamp\":\"$(timestamp)\"}"
+          local extras="${3:-}"
+          echo "{\"severity\":\"$severity\",\"message\":\"$message\",\"timestamp\":\"$(timestamp)\",\"build_id\":\"${BUILD_ID}\"${extras:+,$extras}}"
         }
-        
-        log_json "INFO" "Starting ${_OPERATION} operation"
-        log_json "INFO" "Project: ${_PROJECT_ID}, Locations: ${_LOCATIONS}, Dry-run: ${_DRY_RUN}"
-        
+
+        log_operation_start() {
+          log_json "INFO" "🚀 Starting ${_OPERATION} operation" \
+            "\"operation\":\"${_OPERATION}\",\"project\":\"${_PROJECT_ID}\",\"dry_run\":\"${_DRY_RUN}\""
+        }
+
+        log_operation_end() {
+          local exit_code=$1
+          local duration=$2
+          if [[ $exit_code -eq 0 ]]; then
+            log_json "INFO" "✅ ${_OPERATION} operation completed successfully" \
+              "\"duration_seconds\":$duration,\"exit_code\":$exit_code"
+          else
+            log_json "ERROR" "❌ ${_OPERATION} operation failed" \
+              "\"duration_seconds\":$duration,\"exit_code\":$exit_code"
+          fi
+        }
+
+        # Install dependencies
+        log_json "INFO" "📦 Installing Python dependencies"
+        if pip install --quiet -r requirements.txt; then
+          log_json "INFO" "✓ Dependencies installed successfully"
+        else
+          log_json "ERROR" "❌ Failed to install dependencies"
+          exit 1
+        fi
+
+        # Operation configuration summary
+        log_operation_start
+        log_json "INFO" "Configuration summary" \
+          "\"project\":\"${_PROJECT_ID}\",\"locations\":\"${_LOCATIONS}\",\"dry_run\":\"${_DRY_RUN}\",\"max_parallel\":${_MAX_PARALLEL},\"timeout\":${_TIMEOUT},\"operation\":\"${_OPERATION}\""
+
         # Build Python arguments
         PYTHON_ARGS=(
           "--project" "${_PROJECT_ID}"
@@ -145,39 +259,80 @@ steps:
           "--health-check-timeout" "${_HEALTH_CHECK_TIMEOUT}"
           "--stagger-delay" "${_STAGGER_DELAY}"
         )
-        
+
         # Add optional instance ID
         if [[ -n "${_INSTANCE_ID}" ]]; then
           PYTHON_ARGS+=("--instance" "${_INSTANCE_ID}")
+          log_json "INFO" "🎯 Single instance mode enabled" \
+            "\"instance\":\"${_INSTANCE_ID}\""
+        else
+          log_json "INFO" "🌍 Fleet mode enabled - targeting all instances"
         fi
-        
+
         # Add dry-run flag
         if [[ "${_DRY_RUN}" == "true" ]]; then
           PYTHON_ARGS+=("--dry-run")
+          log_json "WARNING" "🔒 DRY-RUN MODE: No actual changes will be made"
+        else
+          log_json "WARNING" "⚠️  LIVE MODE: Actual changes will be made!" \
+            "\"operation\":\"${_OPERATION}\""
         fi
-        
+
         # Add operation-specific flags
         if [[ "${_OPERATION}" == "rollback" ]]; then
           PYTHON_ARGS+=("--rollback")
+          log_json "INFO" "🔄 Rollback mode enabled"
         elif [[ "${_ROLLBACK_ON_FAILURE}" == "true" ]]; then
           PYTHON_ARGS+=("--rollback-on-failure")
+          log_json "INFO" "🛡️  Automatic rollback on failure enabled"
         fi
-        
+
         # Add verbose flag
         if [[ "${_VERBOSE}" == "true" ]]; then
           PYTHON_ARGS+=("--verbose")
+          log_json "INFO" "📝 Verbose logging enabled"
         fi
-        
-        log_json "INFO" "Executing: python3 main.py ${PYTHON_ARGS[*]}"
-        
-        # Execute the operation
-        if python3 main.py "${PYTHON_ARGS[@]}"; then
-          log_json "INFO" "${_OPERATION} operation completed successfully"
-        else
-          EXIT_CODE=$?
-          log_json "ERROR" "${_OPERATION} operation failed with exit code: $EXIT_CODE"
+
+        log_json "INFO" "Executing command" \
+          "\"command\":\"python3 main.py ${PYTHON_ARGS[*]}\""
+
+        # Execute the operation with timing
+        START_TIME=$(date +%s)
+
+        set +e  # Don't exit immediately on error
+        python3 main.py "${PYTHON_ARGS[@]}"
+        EXIT_CODE=$?
+        set -e
+
+        END_TIME=$(date +%s)
+        DURATION=$((END_TIME - START_TIME))
+
+        # Log results
+        log_operation_end $EXIT_CODE $DURATION
+
+        # Parse and log summary from JSON report if available
+        REPORT_FILE="${_OPERATION}-report-"*.json
+        if ls $REPORT_FILE 1> /dev/null 2>&1; then
+          log_json "INFO" "📊 Operation report available" \
+            "\"report_file\":\"$REPORT_FILE\""
+
+          # Extract and log key statistics
+          if command -v jq &> /dev/null; then
+            STATS=$(cat $REPORT_FILE | jq -c '.statistics' 2>/dev/null || echo "{}")
+            log_json "INFO" "Operation statistics" \
+              "\"statistics\":$STATS"
+          fi
+        fi
+
+        # Exit with Python script's exit code
+        if [[ $EXIT_CODE -ne 0 ]]; then
+          log_json "ERROR" "❌ Build failed. Check logs for details." \
+            "\"exit_code\":$EXIT_CODE,\"help\":\"Review Python logs above for error details\""
           exit $EXIT_CODE
         fi
+
+        log_json "INFO" "✅ Build completed successfully"
+        exit 0
 
   # Step 4: Upload reports to Cloud Storage (optional)
   - id: 'upload-reports'

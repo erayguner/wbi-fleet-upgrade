@@ -33,63 +33,152 @@ def build_parser() -> argparse.ArgumentParser:
     """Build and return the CLI argument parser."""
     parser = argparse.ArgumentParser(
         description=(
-            "Vertex AI Workbench Instances Fleet Upgrade & Rollback Tool (REST v2)"
-        )
+            "Vertex AI Workbench Instances Fleet Upgrade & Rollback Tool\n\n"
+            "Production-ready tool for managing WBI instance upgrades and rollbacks at scale.\n"
+            "Supports fleet operations, automatic rollback, health checks, and comprehensive reporting."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  # Dry-run upgrade (check what would happen)\n"
+            "  python3 main.py --project my-project --locations europe-west2-a --dry-run\n\n"
+            "  # Upgrade fleet with rollback protection\n"
+            "  python3 main.py --project my-project --locations europe-west2-a --rollback-on-failure\n\n"
+            "  # Upgrade single instance\n"
+            "  python3 main.py --project my-project --locations europe-west2-a --instance my-notebook\n\n"
+            "  # Check rollback eligibility\n"
+            "  python3 main.py --project my-project --locations europe-west2-a --rollback --dry-run\n\n"
+            "  # Rollback instance\n"
+            "  python3 main.py --project my-project --locations europe-west2-a --instance my-notebook --rollback\n\n"
+            "Documentation: https://github.com/yourusername/wbi-fleet-upgrade\n"
+            "Quickstart: See QUICKSTART.md for detailed setup instructions\n"
+            "Operations: See OPERATIONS.md for production procedures"
+        ),
     )
-    parser.add_argument("--project", required=True, help="GCP project ID")
-    parser.add_argument(
+
+    # Required arguments
+    required = parser.add_argument_group("required arguments")
+    required.add_argument(
+        "--project",
+        required=True,
+        metavar="PROJECT_ID",
+        help="GCP project ID containing Workbench instances",
+    )
+    required.add_argument(
         "--locations",
         required=True,
         nargs="+",
+        metavar="ZONE",
         help=(
-            "Workbench zone locations (e.g. europe-west2-a europe-west2-b "
-            "europe-west2-c)"
+            "One or more GCP zones to scan for instances "
+            "(e.g., europe-west2-a us-central1-a)"
         ),
     )
-    parser.add_argument(
+
+    # Operation mode
+    mode = parser.add_argument_group("operation mode")
+    mode.add_argument(
         "--instance",
-        help="Specific instance ID (single instance mode)",
+        metavar="INSTANCE_ID",
+        help=(
+            "Target specific instance by ID (single instance mode). "
+            "If not specified, operates on all instances in the specified locations (fleet mode)."
+        ),
     )
-    parser.add_argument(
+    mode.add_argument(
         "--rollback",
         action="store_true",
         help=(
-            "Rollback mode - revert instances to previous version instead of "
-            "upgrading"
+            "Rollback mode: revert instances to previous version instead of upgrading. "
+            "Only available if instance was recently upgraded and snapshot exists."
         ),
     )
-    parser.add_argument("--dry-run", action="store_true", help="Simulate / only check")
-    parser.add_argument(
-        "--max-parallel", type=int, default=5, help="Max concurrent operations"
+    mode.add_argument(
+        "--dry-run",
+        action="store_true",
+        help=(
+            "Dry-run mode: simulate operations without making changes. "
+            "ALWAYS run dry-run first to preview what will happen. "
+            "(RECOMMENDED)"
+        ),
     )
-    parser.add_argument(
-        "--timeout", type=int, default=7200, help="Timeout per instance (seconds)"
-    )
-    parser.add_argument(
-        "--poll-interval", type=int, default=20, help="Seconds between polls"
-    )
-    parser.add_argument(
+
+    # Safety and control
+    safety = parser.add_argument_group("safety and control")
+    safety.add_argument(
         "--rollback-on-failure",
         action="store_true",
         help=(
-            "Attempt rollback if an upgrade fails or times out (upgrade mode " "only)"
+            "Automatically rollback if upgrade fails or times out (upgrade mode only). "
+            "Recommended for production instances."
         ),
     )
-    parser.add_argument(
-        "--health-check-timeout",
+    safety.add_argument(
+        "--max-parallel",
         type=int,
-        default=600,
+        default=5,
+        metavar="N",
         help=(
-            "Timeout waiting for instance to become ACTIVE after operation " "(seconds)"
+            "Maximum number of concurrent operations (default: 5). "
+            "Lower values = safer/slower, higher values = faster but may cause API throttling. "
+            "Recommended: 5-10 for production, 10-20 for development."
         ),
     )
-    parser.add_argument(
+    safety.add_argument(
         "--stagger-delay",
         type=float,
         default=3.0,
-        help="Delay between starting operations to avoid API throttling (seconds)",
+        metavar="SECONDS",
+        help=(
+            "Delay between starting operations to avoid API throttling (default: 3.0 seconds). "
+            "Increase if experiencing rate limit errors."
+        ),
     )
-    parser.add_argument("--verbose", action="store_true", help="Verbose logging")
+
+    # Timeouts
+    timeouts = parser.add_argument_group("timeouts")
+    timeouts.add_argument(
+        "--timeout",
+        type=int,
+        default=7200,
+        metavar="SECONDS",
+        help=(
+            "Maximum time to wait for each operation to complete (default: 7200 = 2 hours). "
+            "Increase for large instances or slow regions."
+        ),
+    )
+    timeouts.add_argument(
+        "--health-check-timeout",
+        type=int,
+        default=600,
+        metavar="SECONDS",
+        help=(
+            "Maximum time to wait for instance to become ACTIVE after operation (default: 600 = 10 minutes). "
+            "Increase if instances take longer to start."
+        ),
+    )
+    timeouts.add_argument(
+        "--poll-interval",
+        type=int,
+        default=20,
+        metavar="SECONDS",
+        help=(
+            "Time between operation status checks (default: 20 seconds). "
+            "Lower values = more API calls, higher values = less frequent updates."
+        ),
+    )
+
+    # Logging
+    logging_group = parser.add_argument_group("logging and output")
+    logging_group.add_argument(
+        "--verbose",
+        action="store_true",
+        help=(
+            "Enable verbose logging with detailed progress information. "
+            "Useful for debugging and monitoring operations."
+        ),
+    )
+
     return parser
 
 

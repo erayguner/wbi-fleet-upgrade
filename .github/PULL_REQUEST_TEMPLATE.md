@@ -27,9 +27,8 @@ Include a Microsoft Planner Ticket or GitHub issue number
 
 ## How to test this pull request (PR)
 
-_Please replace this line with instructions on how to test your
-changes. Testing should be conducted by the PR raiser. Where possible
-the approver should verify the changes._
+_Please replace this line with instructions on how to test your changes. Testing should be conducted
+by the PR raiser. Where possible the approver should verify the changes._
 
 ## Run pre-commit hooks?
 
@@ -38,12 +37,11 @@ the approver should verify the changes._
 
 ## Added/updated tests?
 
-_We encourage you to keep the code coverage percentage at 80% and
-above (for supported languages)._
+_We encourage you to keep the code coverage percentage at 80% and above (for supported languages)._
 
 - [ ] Yes
-- [ ] No, and this is why: _please replace this text with details on
-      why tests have not been included_
+- [ ] No, and this is why: _please replace this text with details on why tests
+      have not been included_
 
 ## Notes
 

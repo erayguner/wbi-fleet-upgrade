@@ -1,0 +1,215 @@
+# Cloud Build Configuration for Vertex AI Workbench Fleet Upgrade/Rollback
+#
+# This configuration supports:
+# - Upgrade and rollback operations via _OPERATION substitution
+# - Dry-run mode (default: true for safety)
+# - Structured JSON logging
+# - Parallel execution control
+# - Dedicated service account for least-privilege access
+#
+# Usage:
+#   gcloud builds submit --config=cloudbuild.yaml \
+#     --substitutions=_PROJECT_ID=my-project,_LOCATIONS="europe-west2-a",_OPERATION=upgrade,_DRY_RUN=true
+#
+# See docs/cloud-build.md for detailed documentation.
+
+timeout: 7200s  # 2 hours max build time
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+# Use dedicated service account for least-privilege access
+# Create via: terraform -chdir=terraform/cloudbuild-iam apply
+serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/wbi-cloudbuild@${PROJECT_ID}.iam.gserviceaccount.com'
+
+substitutions:
+  # Required
+  _PROJECT_ID: ''
+  _LOCATIONS: ''
+  
+  # Operation type: 'upgrade' or 'rollback'
+  _OPERATION: 'upgrade'
+  
+  # Safety: dry-run defaults to true
+  _DRY_RUN: 'true'
+  
+  # Optional: specific instance
+  _INSTANCE_ID: ''
+  
+  # Operational parameters
+  _MAX_PARALLEL: '10'
+  _TIMEOUT: '7200'
+  _POLL_INTERVAL: '20'
+  _HEALTH_CHECK_TIMEOUT: '600'
+  _STAGGER_DELAY: '3.0'
+  
+  # Upgrade-specific
+  _ROLLBACK_ON_FAILURE: 'false'
+  
+  # Logging
+  _JSON_LOGGING: 'true'
+  _VERBOSE: 'false'
+  
+  # Python version (Cloud Build uses python image)
+  _PYTHON_VERSION: '3.11'
+
+steps:
+  # Step 1: Validate required substitutions
+  - id: 'validate-inputs'
+    name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -euo pipefail
+        
+        echo '{"severity":"INFO","message":"Validating build inputs","timestamp":"'"$(date -Iseconds)"'"}'
+        
+        if [[ -z "${_PROJECT_ID}" ]]; then
+          echo '{"severity":"ERROR","message":"_PROJECT_ID is required","timestamp":"'"$(date -Iseconds)"'"}'
+          exit 1
+        fi
+        
+        if [[ -z "${_LOCATIONS}" ]]; then
+          echo '{"severity":"ERROR","message":"_LOCATIONS is required","timestamp":"'"$(date -Iseconds)"'"}'
+          exit 1
+        fi
+        
+        if [[ "${_OPERATION}" != "upgrade" && "${_OPERATION}" != "rollback" ]]; then
+          echo '{"severity":"ERROR","message":"_OPERATION must be upgrade or rollback","timestamp":"'"$(date -Iseconds)"'"}'
+          exit 1
+        fi
+        
+        echo '{"severity":"INFO","message":"Validation passed","operation":"${_OPERATION}","project":"${_PROJECT_ID}","locations":"${_LOCATIONS}","dry_run":"${_DRY_RUN}","timestamp":"'"$(date -Iseconds)"'"}'
+
+  # Step 2: Setup Python environment and install dependencies
+  - id: 'setup-python'
+    name: 'python:${_PYTHON_VERSION}-slim'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -euo pipefail
+        
+        echo '{"severity":"INFO","message":"Setting up Python environment","timestamp":"'"$(date -Iseconds)"'"}'
+        
+        pip install --quiet --upgrade pip
+        pip install --quiet -r requirements.txt
+        
+        echo '{"severity":"INFO","message":"Python dependencies installed","timestamp":"'"$(date -Iseconds)"'"}'
+
+  # Step 3: Run the operation (upgrade or rollback)
+  - id: 'run-operation'
+    name: 'python:${_PYTHON_VERSION}-slim'
+    entrypoint: 'bash'
+    env:
+      - 'GCP_PROJECT_ID=${_PROJECT_ID}'
+      - 'LOCATIONS=${_LOCATIONS}'
+      - 'INSTANCE_ID=${_INSTANCE_ID}'
+      - 'DRY_RUN=${_DRY_RUN}'
+      - 'MAX_PARALLEL=${_MAX_PARALLEL}'
+      - 'TIMEOUT=${_TIMEOUT}'
+      - 'POLL_INTERVAL=${_POLL_INTERVAL}'
+      - 'HEALTH_CHECK_TIMEOUT=${_HEALTH_CHECK_TIMEOUT}'
+      - 'STAGGER_DELAY=${_STAGGER_DELAY}'
+      - 'ROLLBACK_ON_FAILURE=${_ROLLBACK_ON_FAILURE}'
+      - 'JSON_LOGGING=${_JSON_LOGGING}'
+      - 'VERBOSE=${_VERBOSE}'
+    args:
+      - '-c'
+      - |
+        set -euo pipefail
+        
+        # Install dependencies (pip cache from previous step not available in new container)
+        pip install --quiet -r requirements.txt
+        
+        timestamp() { date -Iseconds; }
+        
+        log_json() {
+          local severity="$1"
+          local message="$2"
+          echo "{\"severity\":\"$severity\",\"message\":\"$message\",\"timestamp\":\"$(timestamp)\"}"
+        }
+        
+        log_json "INFO" "Starting ${_OPERATION} operation"
+        log_json "INFO" "Project: ${_PROJECT_ID}, Locations: ${_LOCATIONS}, Dry-run: ${_DRY_RUN}"
+        
+        # Build Python arguments
+        PYTHON_ARGS=(
+          "--project" "${_PROJECT_ID}"
+          "--locations" ${_LOCATIONS}
+          "--max-parallel" "${_MAX_PARALLEL}"
+          "--timeout" "${_TIMEOUT}"
+          "--poll-interval" "${_POLL_INTERVAL}"
+          "--health-check-timeout" "${_HEALTH_CHECK_TIMEOUT}"
+          "--stagger-delay" "${_STAGGER_DELAY}"
+        )
+        
+        # Add optional instance ID
+        if [[ -n "${_INSTANCE_ID}" ]]; then
+          PYTHON_ARGS+=("--instance" "${_INSTANCE_ID}")
+        fi
+        
+        # Add dry-run flag
+        if [[ "${_DRY_RUN}" == "true" ]]; then
+          PYTHON_ARGS+=("--dry-run")
+        fi
+        
+        # Add operation-specific flags
+        if [[ "${_OPERATION}" == "rollback" ]]; then
+          PYTHON_ARGS+=("--rollback")
+        elif [[ "${_ROLLBACK_ON_FAILURE}" == "true" ]]; then
+          PYTHON_ARGS+=("--rollback-on-failure")
+        fi
+        
+        # Add verbose flag
+        if [[ "${_VERBOSE}" == "true" ]]; then
+          PYTHON_ARGS+=("--verbose")
+        fi
+        
+        log_json "INFO" "Executing: python3 main.py ${PYTHON_ARGS[*]}"
+        
+        # Execute the operation
+        if python3 main.py "${PYTHON_ARGS[@]}"; then
+          log_json "INFO" "${_OPERATION} operation completed successfully"
+        else
+          EXIT_CODE=$?
+          log_json "ERROR" "${_OPERATION} operation failed with exit code: $EXIT_CODE"
+          exit $EXIT_CODE
+        fi
+
+  # Step 4: Upload reports to Cloud Storage (optional)
+  - id: 'upload-reports'
+    name: 'gcr.io/cloud-builders/gsutil'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -euo pipefail
+        
+        # Only upload if reports exist and a bucket is configured
+        REPORT_PATTERN="${_OPERATION}-report-*.json"
+        LOG_FILE="workbench-${_OPERATION}.log"
+        
+        if ls $REPORT_PATTERN 1> /dev/null 2>&1; then
+          echo '{"severity":"INFO","message":"Found report files to archive","timestamp":"'"$(date -Iseconds)"'"}'
+          
+          # Archive to build artifacts directory
+          mkdir -p /workspace/artifacts
+          cp $REPORT_PATTERN /workspace/artifacts/ 2>/dev/null || true
+          cp $LOG_FILE /workspace/artifacts/ 2>/dev/null || true
+          
+          echo '{"severity":"INFO","message":"Reports archived to /workspace/artifacts","timestamp":"'"$(date -Iseconds)"'"}'
+        else
+          echo '{"severity":"INFO","message":"No report files found to archive","timestamp":"'"$(date -Iseconds)"'"}'
+        fi
+
+artifacts:
+  objects:
+    location: 'gs://${PROJECT_ID}-cloudbuild-artifacts/wbi-fleet-upgrade/${BUILD_ID}/'
+    paths:
+      - 'upgrade-report-*.json'
+      - 'rollback-report-*.json'
+      - 'workbench-upgrade.log'
+      - 'workbench-rollback.log'

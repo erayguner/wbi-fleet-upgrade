@@ -6,7 +6,6 @@ Tests the modular pre-check validations added to the rollback module.
 
 import unittest
 from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime
 
 from rollback import FleetRollback, RollbackCheckStatus, PreCheckResult
 from models import InstanceRef

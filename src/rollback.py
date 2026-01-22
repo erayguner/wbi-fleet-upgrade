@@ -915,9 +915,6 @@ class FleetRollback:
                 )
                 time.sleep(check_interval)
 
-        # If somehow we exit the loop without returning, be conservative
-        return False
-
     def _format_duration(self, seconds: float) -> str:
         """Format duration in human-readable format."""
         if seconds < 60:

@@ -115,8 +115,37 @@ if [[ $PYTHON_MAJOR -lt 3 ]] || [[ $PYTHON_MAJOR -eq 3 && $PYTHON_MINOR -lt 11 ]
 	fi
 fi
 
-# Step 2: Install Python dependencies
-log_section "Step 2: Python Dependencies"
+# Step 2: Virtual Environment Setup
+log_section "Step 2: Virtual Environment Setup"
+
+VENV_DIR=".venv"
+
+# Check if already in a virtual environment
+if [[ -n "${VIRTUAL_ENV:-}" ]]; then
+	log_success "Already running in a virtual environment: $VIRTUAL_ENV"
+else
+	# Check if venv directory exists
+	if [[ -d "$VENV_DIR" ]]; then
+		log_info "Virtual environment found at $VENV_DIR"
+	else
+		log_info "Creating virtual environment at $VENV_DIR..."
+		if python3 -m venv "$VENV_DIR"; then
+			log_success "Virtual environment created"
+		else
+			log_error "Failed to create virtual environment"
+			exit 1
+		fi
+	fi
+
+	# Activate virtual environment
+	log_info "Activating virtual environment..."
+	# shellcheck disable=SC1091
+	source "$VENV_DIR/bin/activate"
+	log_success "Virtual environment activated"
+fi
+
+# Step 3: Install Python dependencies
+log_section "Step 3: Python Dependencies"
 
 if [[ ! -f "requirements.txt" ]]; then
 	log_error "requirements.txt not found. Are you in the correct directory?"
@@ -159,8 +188,8 @@ if $DEV_MODE; then
 	fi
 fi
 
-# Step 3: Check Google Cloud SDK
-log_section "Step 3: Google Cloud SDK"
+# Step 4: Check Google Cloud SDK
+log_section "Step 4: Google Cloud SDK"
 
 if ! command -v gcloud &>/dev/null; then
 	log_error "Google Cloud SDK (gcloud) is not installed."
@@ -171,8 +200,8 @@ fi
 GCLOUD_VERSION=$(gcloud version --format="value(version)" 2>/dev/null || echo "unknown")
 log_success "Google Cloud SDK $GCLOUD_VERSION found"
 
-# Step 4: Check authentication
-log_section "Step 4: Google Cloud Authentication"
+# Step 5: Check authentication
+log_section "Step 5: Google Cloud Authentication"
 
 log_info "Checking authentication status..."
 
@@ -191,8 +220,8 @@ else
 	fi
 fi
 
-# Step 5: Check project configuration
-log_section "Step 5: Project Configuration"
+# Step 6: Check project configuration
+log_section "Step 6: Project Configuration"
 
 CURRENT_PROJECT=$(gcloud config get-value project 2>/dev/null || echo "")
 
@@ -208,9 +237,9 @@ else
 	log_success "Current project: $CURRENT_PROJECT"
 fi
 
-# Step 6: Enable required APIs
+# Step 7: Enable required APIs
 if [[ -n "$CURRENT_PROJECT" ]]; then
-	log_section "Step 6: Enable Required APIs"
+	log_section "Step 7: Enable Required APIs"
 
 	log_info "Checking if Notebooks API is enabled..."
 
@@ -232,13 +261,13 @@ if [[ -n "$CURRENT_PROJECT" ]]; then
 		fi
 	fi
 else
-	log_section "Step 6: Enable Required APIs"
+	log_section "Step 7: Enable Required APIs"
 	log_warning "Skipping API enablement (no project configured)"
 fi
 
-# Step 7: Terraform setup (optional)
+# Step 8: Terraform setup (optional)
 if $WITH_TERRAFORM; then
-	log_section "Step 7: Terraform IAM Setup"
+	log_section "Step 8: Terraform IAM Setup"
 
 	if ! command -v terraform &>/dev/null; then
 		log_error "Terraform is not installed."
@@ -295,8 +324,8 @@ if $WITH_TERRAFORM; then
 	fi
 fi
 
-# Step 8: Verify installation
-log_section "Step 8: Verification"
+# Step 9: Verify installation
+log_section "Step 9: Verification"
 
 log_info "Verifying installation..."
 
@@ -334,12 +363,20 @@ log_section "Setup Complete!"
 echo ""
 log_success "Environment setup completed successfully!"
 echo ""
+log_info "IMPORTANT: Virtual environment was created at .venv"
+log_info "Before running the tool, activate it with:"
+echo ""
+echo "     source .venv/bin/activate"
+echo ""
 log_info "Next steps:"
 echo ""
-echo "  1. Read the Quickstart Guide:"
+echo "  1. Activate the virtual environment (if not already active):"
+echo "     source .venv/bin/activate"
+echo ""
+echo "  2. Read the Quickstart Guide:"
 echo "     cat QUICKSTART.md"
 echo ""
-echo "  2. Try a dry-run:"
+echo "  3. Try a dry-run:"
 if [[ -n "$CURRENT_PROJECT" ]]; then
 	echo "     python3 main.py --project $CURRENT_PROJECT --locations ZONE --dry-run"
 else

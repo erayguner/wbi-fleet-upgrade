@@ -16,7 +16,7 @@ import logging
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Tuple
 
 from clients import WorkbenchRestClient
 from models import InstanceRef, TrackedOp, UpgradeResult

@@ -84,7 +84,7 @@ class WorkbenchRestClient:
                     try:
                         error_data = resp.json()
                         error_info = error_data.get("error", {}).get("message", "")
-                    except Exception as parse_error:
+                    except ValueError as parse_error:
                         # Failed to parse structured error response; fall back to raw response text.
                         logger.debug(
                             "Failed to parse error response as JSON: %s", parse_error
@@ -350,7 +350,7 @@ class WorkbenchRestClient:
             f"projects/{self.project_id}/locations/{location}/instances/{instance_id}"
         )
         try:
-            _ = self.get_instance(full_name)
+            self.get_instance(full_name)
             return InstanceRef(
                 name=full_name, short_name=instance_id, location=location
             )

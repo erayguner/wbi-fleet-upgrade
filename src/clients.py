@@ -84,8 +84,11 @@ class WorkbenchRestClient:
                     try:
                         error_data = resp.json()
                         error_info = error_data.get("error", {}).get("message", "")
-                    except:
-                        pass
+                    except Exception as parse_error:
+                        # Failed to parse structured error response; fall back to raw response text.
+                        logger.debug(
+                            "Failed to parse error response as JSON: %s", parse_error
+                        )
                     logger.warning(
                         f"Retryable error {resp.status_code} ({error_info}), attempt {attempt + 1}/{self.max_retries + 1}, waiting {delay:.1f}s..."
                     )
@@ -347,7 +350,7 @@ class WorkbenchRestClient:
             f"projects/{self.project_id}/locations/{location}/instances/{instance_id}"
         )
         try:
-            data = self.get_instance(full_name)
+            _ = self.get_instance(full_name)
             return InstanceRef(
                 name=full_name, short_name=instance_id, location=location
             )

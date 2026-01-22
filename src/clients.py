@@ -347,7 +347,7 @@ class WorkbenchRestClient:
             f"projects/{self.project_id}/locations/{location}/instances/{instance_id}"
         )
         try:
-            data = self.get_instance(full_name)
+            _ = self.get_instance(full_name)
             return InstanceRef(
                 name=full_name, short_name=instance_id, location=location
             )

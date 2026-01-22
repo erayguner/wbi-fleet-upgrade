@@ -5,7 +5,6 @@ Unit tests for WorkbenchRestClient.
 import unittest
 from unittest.mock import MagicMock, patch
 from clients import WorkbenchRestClient
-from models import InstanceRef
 
 
 class TestWorkbenchRestClient(unittest.TestCase):

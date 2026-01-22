@@ -3,7 +3,6 @@ Unit tests for CLI module.
 """
 
 import unittest
-from argparse import Namespace
 from unittest.mock import MagicMock, patch
 from cli import build_parser, main
 

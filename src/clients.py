@@ -86,7 +86,9 @@ class WorkbenchRestClient:
                         error_info = error_data.get("error", {}).get("message", "")
                     except Exception as parse_error:
                         # Failed to parse structured error response; fall back to raw response text.
-                        logger.debug("Failed to parse error response as JSON: %s", parse_error)
+                        logger.debug(
+                            "Failed to parse error response as JSON: %s", parse_error
+                        )
                     logger.warning(
                         f"Retryable error {resp.status_code} ({error_info}), attempt {attempt + 1}/{self.max_retries + 1}, waiting {delay:.1f}s..."
                     )
@@ -228,7 +230,9 @@ class WorkbenchRestClient:
         info = (
             upgrade_version
             if upgrade_version
-            else upgrade_info if upgrade_info else "N/A"
+            else upgrade_info
+            if upgrade_info
+            else "N/A"
         )
         return upgradeable, info
 

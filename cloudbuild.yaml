@@ -8,7 +8,7 @@
 # - Dedicated service account for least-privilege access
 #
 # Usage:
-#   gcloud builds submit --config=cloudbuild.yaml \
+#   gcloud beta builds submit --config=cloudbuild.yaml --region=europe-west2 \
 #     --substitutions=_PROJECT_ID=my-project,_LOCATIONS="europe-west2-a",_OPERATION=upgrade,_DRY_RUN=true
 #
 # See docs/cloud-build.md for detailed documentation.

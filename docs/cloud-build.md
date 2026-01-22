@@ -36,21 +36,23 @@ terraform apply \
 ### 2. Run a Dry-Run Upgrade
 
 ```bash
-gcloud builds submit --config=cloudbuild.yaml \
+gcloud beta builds submit --config=cloudbuild.yaml --region=europe-west2 \
   --substitutions=_PROJECT_ID=YOUR_PROJECT_ID,_LOCATIONS="europe-west2-a europe-west2-b europe-west2-c",_OPERATION=upgrade,_DRY_RUN=true
 ```
+
+> **Note**: We use `gcloud beta builds submit` to stream structured logs from Cloud Logging, as `cloudbuild.yaml` is configured with `logging: CLOUD_LOGGING_ONLY`.
 
 ### 3. Run an Actual Upgrade
 
 ```bash
-gcloud builds submit --config=cloudbuild.yaml \
+gcloud beta builds submit --config=cloudbuild.yaml --region=europe-west2 \
   --substitutions=_PROJECT_ID=YOUR_PROJECT_ID,_LOCATIONS="europe-west2-a europe-west2-b europe-west2-c",_OPERATION=upgrade,_DRY_RUN=false,_ROLLBACK_ON_FAILURE=true
 ```
 
 ### 4. Run a Rollback
 
 ```bash
-gcloud builds submit --config=cloudbuild.yaml \
+gcloud beta builds submit --config=cloudbuild.yaml --region=europe-west2 \
   --substitutions=_PROJECT_ID=YOUR_PROJECT_ID,_LOCATIONS="europe-west2-a europe-west2-b europe-west2-c",_OPERATION=rollback,_DRY_RUN=false
 ```
 
@@ -135,21 +137,21 @@ Files include:
 ### Single Instance Upgrade (Dry Run)
 
 ```bash
-gcloud builds submit --config=cloudbuild.yaml \
+gcloud beta builds submit --config=cloudbuild.yaml --region=europe-west2 \
   --substitutions=_PROJECT_ID=my-project,_LOCATIONS="europe-west2-a",_INSTANCE_ID=my-notebook,_OPERATION=upgrade,_DRY_RUN=true
 ```
 
 ### Fleet Rollback with Verbose Logging
 
 ```bash
-gcloud builds submit --config=cloudbuild.yaml \
+gcloud beta builds submit --config=cloudbuild.yaml --region=europe-west2 \
   --substitutions=_PROJECT_ID=my-project,_LOCATIONS="europe-west2-a europe-west2-b europe-west2-c",_OPERATION=rollback,_DRY_RUN=false,_VERBOSE=true
 ```
 
 ### Upgrade with Auto-Rollback on Failure
 
 ```bash
-gcloud builds submit --config=cloudbuild.yaml \
+gcloud beta builds submit --config=cloudbuild.yaml --region=europe-west2 \
   --substitutions=_PROJECT_ID=my-project,_LOCATIONS="europe-west2-a",_OPERATION=upgrade,_DRY_RUN=false,_ROLLBACK_ON_FAILURE=true
 ```
 

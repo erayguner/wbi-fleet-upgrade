@@ -19,6 +19,7 @@ This guide helps you diagnose and resolve common issues with the WBI Fleet Upgra
 ### Problem: "Could not automatically determine credentials"
 
 **Symptoms:**
+
 ```
 google.auth.exceptions.DefaultCredentialsError: Could not automatically determine credentials
 ```
@@ -26,16 +27,19 @@ google.auth.exceptions.DefaultCredentialsError: Could not automatically determin
 **Solutions:**
 
 1. **Authenticate with Application Default Credentials (ADC)**:
+
    ```bash
    gcloud auth application-default login
    ```
 
 2. **Verify authentication**:
+
    ```bash
    gcloud auth list
    ```
 
 3. **Set active account**:
+
    ```bash
    gcloud config set account YOUR_EMAIL@example.com
    ```
@@ -52,12 +56,14 @@ google.auth.exceptions.DefaultCredentialsError: Could not automatically determin
 **Solutions:**
 
 1. **Re-authenticate**:
+
    ```bash
    gcloud auth application-default revoke
    gcloud auth application-default login
    ```
 
 2. **Verify project access**:
+
    ```bash
    gcloud projects describe YOUR_PROJECT_ID
    ```
@@ -75,6 +81,7 @@ google.auth.exceptions.DefaultCredentialsError: Could not automatically determin
 ### Problem: "Permission denied" or "403 Forbidden"
 
 **Symptoms:**
+
 ```
 Error 403: Permission denied
 The caller does not have permission
@@ -83,12 +90,14 @@ The caller does not have permission
 **Required Permissions:**
 
 Your account needs these IAM roles:
+
 - `roles/notebooks.admin` - Manage Workbench instances
 - `roles/compute.viewer` - View compute resources (optional)
 
 **Solutions:**
 
 1. **Check current permissions**:
+
    ```bash
    gcloud projects get-iam-policy YOUR_PROJECT_ID \
      --flatten="bindings[].members" \
@@ -96,6 +105,7 @@ Your account needs these IAM roles:
    ```
 
 2. **Grant required roles** (requires Project IAM Admin):
+
    ```bash
    # Grant notebooks admin role
    gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
@@ -104,6 +114,7 @@ Your account needs these IAM roles:
    ```
 
 3. **Verify API is enabled**:
+
    ```bash
    gcloud services list --enabled | grep notebooks
    ```
@@ -116,6 +127,7 @@ Your account needs these IAM roles:
 ### Problem: Cloud Build service account permission denied
 
 **Symptoms:**
+
 ```
 Error: Service account wbi-cloudbuild@PROJECT.iam.gserviceaccount.com does not have permission
 ```
@@ -123,6 +135,7 @@ Error: Service account wbi-cloudbuild@PROJECT.iam.gserviceaccount.com does not h
 **Solutions:**
 
 1. **Apply Terraform IAM configuration**:
+
    ```bash
    cd terraform/cloudbuild-iam
    terraform init
@@ -130,6 +143,7 @@ Error: Service account wbi-cloudbuild@PROJECT.iam.gserviceaccount.com does not h
    ```
 
 2. **Manual IAM setup**:
+
    ```bash
    # Get project number
    PROJECT_NUMBER=$(gcloud projects describe YOUR_PROJECT_ID --format='value(projectNumber)')
@@ -149,6 +163,7 @@ Error: Service account wbi-cloudbuild@PROJECT.iam.gserviceaccount.com does not h
 ### Problem: "429 Too Many Requests" or "Quota exceeded"
 
 **Symptoms:**
+
 ```
 Error 429: Rate limit exceeded
 Quota exceeded for quota metric 'Queries' and limit 'Queries per minute'
@@ -157,6 +172,7 @@ Quota exceeded for quota metric 'Queries' and limit 'Queries per minute'
 **Solutions:**
 
 1. **Reduce parallelism**:
+
    ```bash
    python3 main.py \
      --project PROJECT \
@@ -166,6 +182,7 @@ Quota exceeded for quota metric 'Queries' and limit 'Queries per minute'
    ```
 
 2. **Increase stagger delay**:
+
    ```bash
    # Add 5-10 second delay between operations
    python3 main.py \
@@ -175,6 +192,7 @@ Quota exceeded for quota metric 'Queries' and limit 'Queries per minute'
    ```
 
 3. **Process in batches**:
+
    ```bash
    # Do one location at a time
    python3 main.py --project PROJECT --locations zone-1
@@ -190,6 +208,7 @@ Quota exceeded for quota metric 'Queries' and limit 'Queries per minute'
 ### Problem: "409 Conflict - Operation already in progress"
 
 **Symptoms:**
+
 ```
 Error 409: Operation already in progress
 ```
@@ -197,12 +216,14 @@ Error 409: Operation already in progress
 **Solutions:**
 
 1. **Wait for existing operation to complete**:
+
    ```bash
    # Check instance status
    gcloud notebooks instances describe INSTANCE_NAME --location=ZONE
    ```
 
 2. **Increase stagger delay**:
+
    ```bash
    python3 main.py \
      --project PROJECT \
@@ -223,11 +244,13 @@ Error 409: Operation already in progress
 ### Problem: "Instance is busy" - Operations skipped
 
 **Symptoms:**
+
 ```
 Skipping instance-name: instance is busy (state=UPGRADING)
 ```
 
 **Valid "Busy" States:**
+
 - PROVISIONING
 - STARTING
 - STOPPING
@@ -238,12 +261,14 @@ Skipping instance-name: instance is busy (state=UPGRADING)
 **Solutions:**
 
 1. **Wait for operation to complete**:
+
    ```bash
    # Monitor instance state
    watch -n 30 'gcloud notebooks instances describe INSTANCE_NAME --location=ZONE --format="value(state)"'
    ```
 
 2. **Check operation status**:
+
    ```bash
    # List recent operations
    gcloud notebooks operations list --location=ZONE
@@ -254,6 +279,7 @@ Skipping instance-name: instance is busy (state=UPGRADING)
 ### Problem: "Instance not found"
 
 **Symptoms:**
+
 ```
 Instance 'my-instance' not found in any of the specified locations
 ```
@@ -261,11 +287,13 @@ Instance 'my-instance' not found in any of the specified locations
 **Solutions:**
 
 1. **List all instances**:
+
    ```bash
    gcloud notebooks instances list --location=ZONE
    ```
 
 2. **Check correct zone**:
+
    ```bash
    # List all zones in region
    gcloud compute zones list --filter="region:(europe-west2)"
@@ -280,6 +308,7 @@ Instance 'my-instance' not found in any of the specified locations
 ### Problem: Instances stuck in STOPPED or SUSPENDED
 
 **Symptoms:**
+
 - Instances are STOPPED/SUSPENDED and not starting
 
 **Solution:**
@@ -287,11 +316,13 @@ Instance 'my-instance' not found in any of the specified locations
 The tool automatically starts STOPPED/SUSPENDED instances before operations. If this fails:
 
 1. **Manually start instance**:
+
    ```bash
    gcloud notebooks instances start INSTANCE_NAME --location=ZONE
    ```
 
 2. **Check for errors**:
+
    ```bash
    gcloud notebooks instances describe INSTANCE_NAME --location=ZONE
    ```
@@ -310,6 +341,7 @@ The tool automatically starts STOPPED/SUSPENDED instances before operations. If 
 ### Problem: "Timeout upgrading instance after XXX seconds"
 
 **Symptoms:**
+
 ```
 Timeout upgrading instance-name after 7200s
 ```
@@ -317,6 +349,7 @@ Timeout upgrading instance-name after 7200s
 **Solutions:**
 
 1. **Increase operation timeout**:
+
    ```bash
    python3 main.py \
      --project PROJECT \
@@ -325,6 +358,7 @@ Timeout upgrading instance-name after 7200s
    ```
 
 2. **Increase health check timeout**:
+
    ```bash
    python3 main.py \
      --project PROJECT \
@@ -333,6 +367,7 @@ Timeout upgrading instance-name after 7200s
    ```
 
 3. **Check instance is actually upgrading**:
+
    ```bash
    gcloud notebooks instances describe INSTANCE_NAME --location=ZONE
    ```
@@ -350,6 +385,7 @@ Timeout upgrading instance-name after 7200s
 ### Problem: Health check timeout after upgrade
 
 **Symptoms:**
+
 ```
 Health verification failed for instance-name
 ```
@@ -357,6 +393,7 @@ Health verification failed for instance-name
 **Solutions:**
 
 1. **Increase health check timeout**:
+
    ```bash
    python3 main.py \
      --project PROJECT \
@@ -365,6 +402,7 @@ Health verification failed for instance-name
    ```
 
 2. **Check instance logs**:
+
    ```bash
    gcloud notebooks instances describe INSTANCE_NAME \
      --location=ZONE \
@@ -382,38 +420,45 @@ Health verification failed for instance-name
 ### Problem: "No upgrade history found" - Rollback not available
 
 **Symptoms:**
+
 ```
 instance_state check: PASSED
 upgrade_history check: FAILED - No upgrade history found
 ```
 
 **Why rollback isn't available:**
+
 - Instance was never upgraded
 - Upgrade history was cleared
 - Instance is brand new
 
 **Solution:**
+
 - Rollback is only available for recently upgraded instances
 - No action needed - instance cannot be rolled back
 
 ### Problem: "No snapshot available" - Rollback not available
 
 **Symptoms:**
+
 ```
 upgrade_history check: FAILED - No snapshot available from previous upgrade
 ```
 
 **Why this happens:**
+
 - Previous upgrade didn't create a snapshot
 - Snapshot was deleted
 
 **Solution:**
+
 - Rollback not possible without snapshot
 - Future upgrades will create snapshots
 
 ### Problem: Rollback eligibility check passes but rollback fails
 
 **Symptoms:**
+
 ```
 Pre-checks all PASSED
 Rollback started but failed: Instance is not eligible for rollback
@@ -422,10 +467,12 @@ Rollback started but failed: Instance is not eligible for rollback
 **Solutions:**
 
 1. **Check rollback window hasn't expired**:
+
    - Rollback may have a time window (e.g., 30 days)
    - Pre-checks may pass but rollback API rejects
 
 2. **Verify with GCP directly**:
+
    ```bash
    gcloud notebooks instances describe INSTANCE_NAME --location=ZONE
    ```
@@ -439,6 +486,7 @@ Rollback started but failed: Instance is not eligible for rollback
 ### Problem: Build fails immediately with "validation failed"
 
 **Symptoms:**
+
 ```
 ERROR: _PROJECT_ID is required
 ```
@@ -446,12 +494,14 @@ ERROR: _PROJECT_ID is required
 **Solutions:**
 
 1. **Check substitutions**:
+
    ```bash
-   gcloud builds submit --config=cloudbuild.yaml \
+   gcloud beta builds submit --config=cloudbuild.yaml \
      --substitutions=_PROJECT_ID=my-project,_LOCATIONS="zone1 zone2"
    ```
 
 2. **Quote locations properly**:
+
    ```bash
    # Correct
    --substitutions=_LOCATIONS="zone1 zone2"
@@ -469,6 +519,7 @@ ERROR: _PROJECT_ID is required
 ### Problem: "Service account not found" in Cloud Build
 
 **Symptoms:**
+
 ```
 Error: Service account wbi-cloudbuild@PROJECT.iam.gserviceaccount.com does not exist
 ```
@@ -476,6 +527,7 @@ Error: Service account wbi-cloudbuild@PROJECT.iam.gserviceaccount.com does not e
 **Solution:**
 
 1. **Create service account with Terraform**:
+
    ```bash
    cd terraform/cloudbuild-iam
    terraform init
@@ -489,6 +541,7 @@ Error: Service account wbi-cloudbuild@PROJECT.iam.gserviceaccount.com does not e
 ### Problem: Cloud Build timeout
 
 **Symptoms:**
+
 ```
 Error: Build timeout
 ```
@@ -496,13 +549,14 @@ Error: Build timeout
 **Solutions:**
 
 1. **Increase build timeout in cloudbuild.yaml**:
+
    ```yaml
-   timeout: 14400s  # 4 hours instead of 2
+   timeout: 14400s # 4 hours instead of 2
    ```
 
 2. **Or increase via command line**:
    ```bash
-   gcloud builds submit --timeout=14400s --config=cloudbuild.yaml ...
+   gcloud beta builds submit --timeout=14400s --config=cloudbuild.yaml ...
    ```
 
 ## Performance Issues
@@ -510,12 +564,14 @@ Error: Build timeout
 ### Problem: Upgrades taking very long
 
 **Symptoms:**
+
 - Operations take hours to complete
 - Much slower than expected
 
 **Solutions:**
 
 1. **Increase parallelism** (if not rate limited):
+
    ```bash
    python3 main.py \
      --project PROJECT \
@@ -524,10 +580,12 @@ Error: Build timeout
    ```
 
 2. **Check for rate limiting**:
+
    - Look for 429 errors in logs
    - If present, reduce parallelism
 
 3. **Use appropriate poll interval**:
+
    ```bash
    # Less frequent polling
    python3 main.py \
@@ -547,11 +605,13 @@ Error: Build timeout
 ### Problem: High API costs
 
 **Symptoms:**
+
 - Unexpectedly high API usage costs
 
 **Solutions:**
 
 1. **Reduce poll frequency**:
+
    ```bash
    python3 main.py \
      --project PROJECT \
@@ -570,6 +630,7 @@ Error: Build timeout
 When reporting issues, include:
 
 1. **Version information**:
+
    ```bash
    python3 --version
    gcloud version
@@ -577,18 +638,21 @@ When reporting issues, include:
    ```
 
 2. **Command used**:
+
    ```bash
    # Include the exact command you ran
    python3 main.py --project PROJECT --locations ZONE --dry-run --verbose
    ```
 
 3. **Error messages**:
+
    ```bash
    # Include relevant log excerpts
    tail -50 workbench-upgrade.log
    ```
 
 4. **JSON report** (if available):
+
    ```bash
    cat upgrade-report-*.json | jq '.statistics'
    ```
@@ -601,15 +665,18 @@ When reporting issues, include:
 ### Where to Get Help
 
 1. **Documentation**:
+
    - [Quickstart Guide](QUICKSTART.md)
    - [Operations Guide](OPERATIONS.md)
    - [Cloud Build Guide](docs/cloud-build.md)
 
 2. **GitHub Issues**:
+
    - Report bugs: https://github.com/yourusername/wbi-fleet-upgrade/issues
    - Include diagnostic information above
 
 3. **Verbose Logging**:
+
    ```bash
    # Get detailed debug output
    python3 main.py \

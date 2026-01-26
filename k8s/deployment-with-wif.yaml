@@ -1,0 +1,206 @@
+# Kubernetes Deployment with Workload Identity Federation
+# No service account keys - uses GKE Workload Identity
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: wbi-fleet-upgrader
+  namespace: default
+  annotations:
+    # Link K8s SA to GCP SA via Workload Identity
+    iam.gke.io/gcp-service-account: wbi-fleet-upgrader-k8s@PROJECT_ID.iam.gserviceaccount.com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wbi-fleet-upgrader
+  namespace: default
+  labels:
+    app: wbi-fleet-upgrader
+    version: v1.0.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wbi-fleet-upgrader
+  template:
+    metadata:
+      labels:
+        app: wbi-fleet-upgrader
+        version: v1.0.0
+    spec:
+      # Use Workload Identity - NO volume mounts for keys!
+      serviceAccountName: wbi-fleet-upgrader
+
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+      - name: upgrader
+        image: europe-west2-docker.pkg.dev/PROJECT_ID/wbi-fleet-upgrader/wbi-fleet-upgrader:latest
+        imagePullPolicy: Always
+
+        # Security context for container
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+              - ALL
+
+        # Environment variables - NO credentials!
+        # Workload Identity provides authentication automatically
+        env:
+        - name: GCP_PROJECT_ID
+          value: "PROJECT_ID"
+        - name: LOCATIONS
+          value: "europe-west2-a,europe-west2-b"
+        - name: JSON_LOGGING
+          value: "true"
+        # GOOGLE_APPLICATION_CREDENTIALS not needed with Workload Identity!
+
+        # Resources
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+        # Probes
+        livenessProbe:
+          exec:
+            command:
+            - python3
+            - -c
+            - |
+              import sys
+              from src.clients import WorkbenchClient
+              try:
+                  client = WorkbenchClient(project_id='health-check')
+                  sys.exit(0)
+              except Exception:
+                  sys.exit(1)
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          exec:
+            command:
+            - python3
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
+        # Volume mounts for temporary storage only
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: home
+          mountPath: /home/appuser
+
+      volumes:
+      - name: tmp
+        emptyDir:
+          sizeLimit: 100Mi
+      - name: home
+        emptyDir:
+          sizeLimit: 10Mi
+
+      # Pod anti-affinity for high availability
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - wbi-fleet-upgrader
+              topologyKey: kubernetes.io/hostname
+---
+# CronJob for scheduled upgrades
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: wbi-fleet-upgrader-cron
+  namespace: default
+spec:
+  # Run every day at 2 AM UTC
+  schedule: "0 2 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: wbi-fleet-upgrader
+            type: cronjob
+        spec:
+          # Use Workload Identity
+          serviceAccountName: wbi-fleet-upgrader
+          restartPolicy: OnFailure
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+
+          containers:
+          - name: upgrader
+            image: europe-west2-docker.pkg.dev/PROJECT_ID/wbi-fleet-upgrader/wbi-fleet-upgrader:latest
+            imagePullPolicy: Always
+
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              runAsUser: 1000
+              capabilities:
+                drop:
+                  - ALL
+
+            args: ["upgrade", "--dry-run=false"]
+
+            env:
+            - name: GCP_PROJECT_ID
+              value: "PROJECT_ID"
+            - name: LOCATIONS
+              value: "europe-west2-a,europe-west2-b"
+            - name: JSON_LOGGING
+              value: "true"
+
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+
+            volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+          volumes:
+          - name: tmp
+            emptyDir:
+              sizeLimit: 100Mi

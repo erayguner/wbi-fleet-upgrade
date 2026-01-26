@@ -198,8 +198,51 @@ cython_debug/
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
 #  refer to https://docs.cursor.com/context/ignore-files
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl
 .cursorignore
 .cursorindexingignore
+
+# Container and build artifacts
+build-report.json
+outputs/
+consumer-key.json
+builder-key.json
+*-sa-key.json
+service-account.json
+*.json.key
+
+# Security sensitive files (CRITICAL - DO NOT COMMIT)
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx
+**/credentials*.json
+**/service-account*.json
+**/.env.local
+**/.env.production
+**/.env.staging
+
+# Terraform sensitive files
+terraform/**/*.tfvars
+terraform/**/*.tfstate
+terraform/**/*.tfstate.backup
+
+# Build artifacts that might contain secrets
+sbom.json
+vulnerabilities.json
+build-output/
+
+# Security reports (contains sensitive findings)
+docs/SECURITY_COMPLIANCE_REPORT*.md
+
+# Pre-commit baseline
+.secrets.baseline
 
 # Marimo
 marimo/_static/

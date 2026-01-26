@@ -1,16 +1,32 @@
 <!--
 For Work In Progress Pull Requests, please use the Draft PR feature.
 To tick checkboxes put an `x` in the `[ ]`
+
+IMPORTANT: Ensure your PR title follows Conventional Commits format for automated releases:
+- feat: description (new features)
+- fix: description (bug fixes)
+- security: description (security fixes)
+- refactor: description (code refactoring)
+- perf: description (performance improvements)
+- docs: description (documentation)
+- test: description (tests)
+- chore: description (maintenance)
+
+For breaking changes, add ! after type: feat!: description
 -->
 
 # What type of PR is this? (tick all applicable)
 
-- [ ] Refactor
-- [ ] Feature
-- [ ] Release (have you completed the release pro forma?)
-- [ ] Bug Fix
-- [ ] Optimization
-- [ ] Documentation Update
+- [ ] ✨ Feature (`feat:`)
+- [ ] 🐛 Bug Fix (`fix:`)
+- [ ] 🔒 Security Fix (`security:`)
+- [ ] ♻️ Refactor (`refactor:`)
+- [ ] ⚡ Performance (`perf:`)
+- [ ] 📝 Documentation Update (`docs:`)
+- [ ] 🧪 Test Update (`test:`)
+- [ ] 🔧 Chore/Maintenance (`chore:`)
+- [ ] 💥 Breaking Change (add `!` after type)
+- [ ] 🚀 Release (automated by release-please)
 
 ## Description
 
@@ -43,6 +59,28 @@ _We encourage you to keep the code coverage percentage at 80% and above (for sup
 - [ ] No, and this is why: _please replace this text with details on why tests
       have not been included_
 
+## Conventional Commit Title
+
+<!--
+Your PR title will be used in the automated changelog. Please ensure it follows the format:
+<type>[optional scope]: <description>
+
+Examples:
+- feat: add batch upgrade capability
+- fix: resolve instance state validation error
+- security: update dependencies to patch CVE-2026-1234
+- docs: improve authentication setup guide
+
+For breaking changes:
+- feat!: change upgrade API signature
+-->
+
+**Suggested PR Title:**
+```
+<type>: <description>
+```
+
 ## Notes
 
 - The PR raiser is expected to perform the Git merge.
+- This PR will be included in the next automated release via release-please.

@@ -36,8 +36,9 @@ A comprehensive, safe, and well-tested tool for automating Vertex AI Workbench i
 - 📋 **[Operations Guide](OPERATIONS.md)** - Production operations and procedures
 - 🔧 **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Problem diagnosis and resolution
 - ☁️ **[Cloud Build Setup](docs/cloud-build.md)** - CI/CD integration
+- 🐳 **[Container Deployment](CONTAINER_README.md)** - Containerized deployment guide
+- 🚀 **[Release Process](docs/RELEASE_PROCESS.md)** - Automated releases and versioning
 - 🤝 **[Contributing](CONTRIBUTING.md)** - Development and testing
-- 📝 **[Improvements Log](IMPROVEMENTS.md)** - Recent enhancements and changes
 
 ## Quick Start
 

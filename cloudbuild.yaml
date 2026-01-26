@@ -26,30 +26,30 @@ substitutions:
   # Required
   _PROJECT_ID: ''
   _LOCATIONS: ''
-  
+
   # Operation type: 'upgrade' or 'rollback'
   _OPERATION: 'upgrade'
-  
+
   # Safety: dry-run defaults to true
   _DRY_RUN: 'true'
-  
+
   # Optional: specific instance
   _INSTANCE_ID: ''
-  
+
   # Operational parameters
   _MAX_PARALLEL: '10'
   _TIMEOUT: '7200'
   _POLL_INTERVAL: '20'
   _HEALTH_CHECK_TIMEOUT: '600'
   _STAGGER_DELAY: '3.0'
-  
+
   # Upgrade-specific
   _ROLLBACK_ON_FAILURE: 'false'
-  
+
   # Logging
   _JSON_LOGGING: 'true'
   _VERBOSE: 'false'
-  
+
 
 steps:
   # Step 1: Validate required substitutions (Pinned image)
@@ -60,30 +60,30 @@ steps:
       - '-c'
       - |
         set -euo pipefail
-        
+
         echo '{"severity":"INFO","message":"Validating build inputs","timestamp":"'"$(date -Iseconds)"'"}'
-        
+
         if [[ -z "${_PROJECT_ID}" ]]; then
           echo '{"severity":"ERROR","message":"_PROJECT_ID is required","timestamp":"'"$(date -Iseconds)"'"}'
           exit 1
         fi
-        
+
         if [[ -z "${_LOCATIONS}" ]]; then
           echo '{"severity":"ERROR","message":"_LOCATIONS is required","timestamp":"'"$(date -Iseconds)"'"}'
           exit 1
         fi
-        
+
         if [[ "${_OPERATION}" != "upgrade" && "${_OPERATION}" != "rollback" ]]; then
           echo '{"severity":"ERROR","message":"_OPERATION must be upgrade or rollback","timestamp":"'"$(date -Iseconds)"'"}'
           exit 1
         fi
-        
+
         # Enforce execution in europe-west2
         if [[ "${LOCATION}" != "europe-west2" ]]; then
           echo '{"severity":"ERROR","message":"Build must run in europe-west2 region. Current location: ${LOCATION}","timestamp":"'"$(date -Iseconds)"'"}'
           exit 1
         fi
-        
+
         echo '{"severity":"INFO","message":"Validation passed","operation":"${_OPERATION}","project":"${_PROJECT_ID}","locations":"${_LOCATIONS}","dry_run":"${_DRY_RUN}","timestamp":"'"$(date -Iseconds)"'"}'
 
   # Step 2: Build Custom Image (Pre-baked environment)
@@ -112,18 +112,18 @@ steps:
       - '-c'
       - |
         set -euo pipefail
-        
+
         timestamp() { date -Iseconds; }
-        
+
         log_json() {
           local severity="$$1"
           local message="$$2"
           echo "{\"severity\":\"$$severity\",\"message\":\"$$message\",\"timestamp\":\"$$(timestamp)\"}"
         }
-        
+
         log_json "INFO" "Starting ${_OPERATION} operation"
         log_json "INFO" "Project: ${_PROJECT_ID}, Locations: ${_LOCATIONS}, Dry-run: ${_DRY_RUN}"
-        
+
         # Build Python arguments
         PYTHON_ARGS=(
           "--project" "${_PROJECT_ID}"
@@ -134,31 +134,31 @@ steps:
           "--health-check-timeout" "${_HEALTH_CHECK_TIMEOUT}"
           "--stagger-delay" "${_STAGGER_DELAY}"
         )
-        
+
         # Add optional instance ID
         if [[ -n "${_INSTANCE_ID}" ]]; then
           PYTHON_ARGS+=("--instance" "${_INSTANCE_ID}")
         fi
-        
+
         # Add dry-run flag
         if [[ "${_DRY_RUN}" == "true" ]]; then
           PYTHON_ARGS+=("--dry-run")
         fi
-        
+
         # Add operation-specific flags
         if [[ "${_OPERATION}" == "rollback" ]]; then
           PYTHON_ARGS+=("--rollback")
         elif [[ "${_ROLLBACK_ON_FAILURE}" == "true" ]]; then
           PYTHON_ARGS+=("--rollback-on-failure")
         fi
-        
+
         # Add verbose flag
         if [[ "${_VERBOSE}" == "true" ]]; then
           PYTHON_ARGS+=("--verbose")
         fi
-        
+
         log_json "INFO" "Executing: python3 main.py $${PYTHON_ARGS[*]}"
-        
+
         # Execute the operation
         if python3 main.py "$${PYTHON_ARGS[@]}"; then
           log_json "INFO" "${_OPERATION} operation completed successfully"
@@ -176,19 +176,19 @@ steps:
       - '-c'
       - |
         set -euo pipefail
-        
+
         # Only upload if reports exist
         REPORT_PATTERN="${_OPERATION}-report-*.json"
         LOG_FILE="workbench-${_OPERATION}.log"
         TARGET_BUCKET="gs://${_PROJECT_ID}-cloudbuild-artifacts/wbi-fleet-upgrade/${BUILD_ID}/"
-        
+
         if ls $$REPORT_PATTERN 1> /dev/null 2>&1; then
           echo '{"severity":"INFO","message":"Found report files to archive","timestamp":"'"$(date -Iseconds)"'"}'
-          
+
           # Upload to GCS
           gsutil cp $$REPORT_PATTERN $$TARGET_BUCKET || true
           gsutil cp $$LOG_FILE $$TARGET_BUCKET || true
-          
+
           echo '{"severity":"INFO","message":"Reports uploaded to '"$$TARGET_BUCKET"'","timestamp":"'"$(date -Iseconds)"'"}'
         else
           echo '{"severity":"INFO","message":"No report files found to archive","timestamp":"'"$(date -Iseconds)"'"}'

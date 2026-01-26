@@ -1,57 +1,41 @@
----
-# Install: pipx install pre-commit (recommended) or pip install pre-commit
-# Enable: pre-commit install
+# Pre-commit hooks for WBI Fleet Upgrader
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
 
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+  # Secret detection with detect-secrets
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
     hooks:
-      - id: check-added-large-files
-      - id: check-merge-conflict
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: package.lock.json
 
-  # Python formatting
-  - repo: https://github.com/psf/black
-    rev: 26.1.0
-    hooks:
-      - id: black
-        language_version: python3
-
-  # Shell formatting
-  - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.12.0-2
-    hooks:
-      - id: shfmt
-        files: \.(sh|bash|zsh|zshrc)$
-        args:
-          - -i
-          - "2"
-          - -bn
-          - -ci
-          - -sr
-
-  # Secret scanning
+  # Secret scanning with gitleaks
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0
     hooks:
       - id: gitleaks
-        args:
-          - --no-banner
-          - --redact
 
-  # YAML linting (more thorough than basic check-yaml)
-  - repo: https://github.com/adrienverge/yamllint
-    rev: v1.38.0
+  # General pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
     hooks:
-      - id: yamllint
-        files: \.(yaml|yml)$
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
 
-  # Markdown linting
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.47.0
+  # Python security linting
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.3
     hooks:
-      - id: markdownlint
-        files: \.md$
-        args: ["-c", ".markdownlint.json"]
+      - id: bandit
+        args: ['-c', 'pyproject.toml']
+        additional_dependencies: ['bandit[toml]']

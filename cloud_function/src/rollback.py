@@ -465,8 +465,10 @@ class FleetRollback:
         self.run_start_time = time.time()
 
         mode = "Single Instance" if instance_id else "Fleet"
-        logger.info(f"Starting {mode} Rollback: project={self.project_id}, "
-                    f"locations={self.locations}, dry_run={self.dry_run}")
+        logger.info(
+            f"Starting {mode} Rollback: project={self.project_id}, "
+            f"locations={self.locations}, dry_run={self.dry_run}"
+        )
 
         instances = self.scan(instance_id)
 
@@ -621,7 +623,9 @@ class FleetRollback:
                 continue
 
             self.stats["eligible"] += 1
-            logger.info(f"{inst.short_name}: ELIGIBLE for rollback to {target_snapshot}")
+            logger.info(
+                f"{inst.short_name}: ELIGIBLE for rollback to {target_snapshot}"
+            )
 
             if self.dry_run:
                 logger.info(f"DRY RUN: Would rollback {inst.short_name}")

@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 # Security and Validation
 # =============================================================================
 
+
 def validate_request(func: Callable) -> Callable:
     """
     Decorator to validate incoming requests.
@@ -52,6 +53,7 @@ def validate_request(func: Callable) -> Callable:
     - Required parameters
     - Parameter types and formats
     """
+
     @wraps(func)
     def wrapper(request: Request) -> Tuple[Dict[str, Any], int]:
         # Check content type for POST requests
@@ -81,6 +83,7 @@ def sanitize_input(value: str, max_length: int = 256) -> str:
 def validate_project_id(project_id: str) -> bool:
     """Validate GCP project ID format."""
     import re
+
     # GCP project IDs: 6-30 chars, lowercase letters, digits, hyphens
     # Must start with letter, cannot end with hyphen
     pattern = r"^[a-z][a-z0-9-]{4,28}[a-z0-9]$"
@@ -90,6 +93,7 @@ def validate_project_id(project_id: str) -> bool:
 def validate_location(location: str) -> bool:
     """Validate GCP zone format."""
     import re
+
     # Format: region-zone (e.g., europe-west2-a, us-central1-b)
     pattern = r"^[a-z]+-[a-z]+\d+-[a-z]$"
     return bool(re.match(pattern, location))
@@ -98,6 +102,7 @@ def validate_location(location: str) -> bool:
 def validate_instance_id(instance_id: str) -> bool:
     """Validate instance ID format."""
     import re
+
     # Instance IDs: 1-63 chars, lowercase letters, digits, hyphens
     pattern = r"^[a-z][a-z0-9-]{0,61}[a-z0-9]?$"
     return bool(re.match(pattern, instance_id))
@@ -106,6 +111,7 @@ def validate_instance_id(instance_id: str) -> bool:
 # =============================================================================
 # Configuration Loading
 # =============================================================================
+
 
 def get_config_from_request(request: Request) -> CloudFunctionConfig:
     """
@@ -121,14 +127,18 @@ def get_config_from_request(request: Request) -> CloudFunctionConfig:
         request_json.get("project_id") or os.environ.get("GCP_PROJECT_ID", "")
     )
     if not project_id:
-        raise ValueError("project_id is required (request body or GCP_PROJECT_ID env var)")
+        raise ValueError(
+            "project_id is required (request body or GCP_PROJECT_ID env var)"
+        )
     if not validate_project_id(project_id):
         raise ValueError(f"Invalid project_id format: {project_id}")
 
     # Required: locations from request or env
     locations_raw = request_json.get("locations") or os.environ.get("LOCATIONS", "")
     if isinstance(locations_raw, str):
-        locations = [sanitize_input(loc.strip()) for loc in locations_raw.split() if loc.strip()]
+        locations = [
+            sanitize_input(loc.strip()) for loc in locations_raw.split() if loc.strip()
+        ]
     elif isinstance(locations_raw, list):
         locations = [sanitize_input(loc) for loc in locations_raw if loc]
     else:
@@ -182,7 +192,9 @@ def get_config_from_request(request: Request) -> CloudFunctionConfig:
         instance_id=instance_id if instance_id else None,
         dry_run=get_bool("dry_run", True),  # Default to dry_run=True for safety
         max_parallel=min(get_int("max_parallel", 5), 20),  # Cap at 20
-        timeout=min(get_int("timeout", 7200), 9 * 60 * 60),  # Cap at 9 hours (Cloud Function max)
+        timeout=min(
+            get_int("timeout", 7200), 9 * 60 * 60
+        ),  # Cap at 9 hours (Cloud Function max)
         poll_interval=max(get_int("poll_interval", 20), 10),  # Min 10 seconds
         rollback_on_failure=get_bool("rollback_on_failure", False),
         health_check_timeout=get_int("health_check_timeout", 600),
@@ -193,6 +205,7 @@ def get_config_from_request(request: Request) -> CloudFunctionConfig:
 # =============================================================================
 # Response Helpers
 # =============================================================================
+
 
 def create_response(
     success: bool,
@@ -239,6 +252,7 @@ def format_results(results: List[UpgradeResult], stats: Dict) -> Dict[str, Any]:
 # =============================================================================
 # HTTP Endpoint Handlers
 # =============================================================================
+
 
 @functions_framework.http
 def main(request: Request) -> Tuple[Dict[str, Any], int]:
@@ -339,8 +353,10 @@ def handle_upgrade(request: Request) -> Tuple[Dict[str, Any], int]:
 
     config = get_config_from_request(request)
 
-    logger.info(f"Starting upgrade: project={config.project_id}, locations={config.locations}, "
-                f"instance={config.instance_id}, dry_run={config.dry_run}")
+    logger.info(
+        f"Starting upgrade: project={config.project_id}, locations={config.locations}, "
+        f"instance={config.instance_id}, dry_run={config.dry_run}"
+    )
 
     upgrader = FleetUpgrader(
         project_id=config.project_id,
@@ -390,8 +406,10 @@ def handle_rollback(request: Request) -> Tuple[Dict[str, Any], int]:
 
     config = get_config_from_request(request)
 
-    logger.info(f"Starting rollback: project={config.project_id}, locations={config.locations}, "
-                f"instance={config.instance_id}, dry_run={config.dry_run}")
+    logger.info(
+        f"Starting rollback: project={config.project_id}, locations={config.locations}, "
+        f"instance={config.instance_id}, dry_run={config.dry_run}"
+    )
 
     rollback = FleetRollback(
         project_id=config.project_id,
@@ -439,14 +457,16 @@ def handle_status(request: Request) -> Tuple[Dict[str, Any], int]:
                 inst = client.get_instance_by_name(config.instance_id, loc)
                 if inst:
                     data = client.get_instance(inst.name)
-                    instances.append({
-                        "name": inst.short_name,
-                        "location": inst.location,
-                        "state": data.get("state"),
-                        "health_state": data.get("healthState"),
-                        "create_time": data.get("createTime"),
-                        "update_time": data.get("updateTime"),
-                    })
+                    instances.append(
+                        {
+                            "name": inst.short_name,
+                            "location": inst.location,
+                            "state": data.get("state"),
+                            "health_state": data.get("healthState"),
+                            "create_time": data.get("createTime"),
+                            "update_time": data.get("updateTime"),
+                        }
+                    )
                     break
             except Exception as e:
                 logger.debug(f"Instance not found in {loc}: {e}")
@@ -458,16 +478,20 @@ def handle_status(request: Request) -> Tuple[Dict[str, Any], int]:
                 for inst in insts:
                     try:
                         data = client.get_instance(inst.name)
-                        instances.append({
-                            "name": inst.short_name,
-                            "location": inst.location,
-                            "state": data.get("state"),
-                            "health_state": data.get("healthState"),
-                            "create_time": data.get("createTime"),
-                            "update_time": data.get("updateTime"),
-                        })
+                        instances.append(
+                            {
+                                "name": inst.short_name,
+                                "location": inst.location,
+                                "state": data.get("state"),
+                                "health_state": data.get("healthState"),
+                                "create_time": data.get("createTime"),
+                                "update_time": data.get("updateTime"),
+                            }
+                        )
                     except Exception as e:
-                        logger.warning(f"Failed to get details for {inst.short_name}: {e}")
+                        logger.warning(
+                            f"Failed to get details for {inst.short_name}: {e}"
+                        )
             except Exception as e:
                 logger.error(f"Failed to list instances in {loc}: {e}")
 
@@ -504,12 +528,14 @@ def handle_check_upgradability(request: Request) -> Tuple[Dict[str, Any], int]:
                 inst = client.get_instance_by_name(config.instance_id, loc)
                 if inst:
                     upgradeable, info = client.check_upgradability(inst.name)
-                    results.append({
-                        "name": inst.short_name,
-                        "location": inst.location,
-                        "upgradeable": upgradeable,
-                        "target_version": info if upgradeable else None,
-                    })
+                    results.append(
+                        {
+                            "name": inst.short_name,
+                            "location": inst.location,
+                            "upgradeable": upgradeable,
+                            "target_version": info if upgradeable else None,
+                        }
+                    )
                     break
             except Exception as e:
                 logger.debug(f"Instance not found in {loc}: {e}")
@@ -520,20 +546,26 @@ def handle_check_upgradability(request: Request) -> Tuple[Dict[str, Any], int]:
                 for inst in insts:
                     try:
                         upgradeable, info = client.check_upgradability(inst.name)
-                        results.append({
-                            "name": inst.short_name,
-                            "location": inst.location,
-                            "upgradeable": upgradeable,
-                            "target_version": info if upgradeable else None,
-                        })
+                        results.append(
+                            {
+                                "name": inst.short_name,
+                                "location": inst.location,
+                                "upgradeable": upgradeable,
+                                "target_version": info if upgradeable else None,
+                            }
+                        )
                     except Exception as e:
-                        logger.warning(f"Failed to check upgradability for {inst.short_name}: {e}")
-                        results.append({
-                            "name": inst.short_name,
-                            "location": inst.location,
-                            "upgradeable": None,
-                            "error": str(e),
-                        })
+                        logger.warning(
+                            f"Failed to check upgradability for {inst.short_name}: {e}"
+                        )
+                        results.append(
+                            {
+                                "name": inst.short_name,
+                                "location": inst.location,
+                                "upgradeable": None,
+                                "error": str(e),
+                            }
+                        )
             except Exception as e:
                 logger.error(f"Failed to list instances in {loc}: {e}")
 
@@ -556,6 +588,7 @@ def handle_health(request: Request) -> Tuple[Dict[str, Any], int]:
     # Basic health check - verify we can import dependencies
     try:
         import google.auth
+
         return create_response(
             success=True,
             data={"status": "healthy"},

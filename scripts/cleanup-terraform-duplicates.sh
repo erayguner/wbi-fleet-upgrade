@@ -8,15 +8,15 @@ echo ""
 
 # Remove files that should be merged, not added
 if [ -f "terraform/artifact-registry/main-updated.tf" ]; then
-  echo "  ❌ Removing: terraform/artifact-registry/main-updated.tf"
-  echo "     → Merge changes into main.tf instead"
-  rm terraform/artifact-registry/main-updated.tf
+	echo "  ❌ Removing: terraform/artifact-registry/main-updated.tf"
+	echo "     → Merge changes into main.tf instead"
+	rm terraform/artifact-registry/main-updated.tf
 fi
 
 if [ -f "terraform/cloudbuild-iam/storage-bucket-updated.tf" ]; then
-  echo "  ❌ Removing: terraform/cloudbuild-iam/storage-bucket-updated.tf"
-  echo "     → Merge changes into main.tf instead"
-  rm terraform/cloudbuild-iam/storage-bucket-updated.tf
+	echo "  ❌ Removing: terraform/cloudbuild-iam/storage-bucket-updated.tf"
+	echo "     → Merge changes into main.tf instead"
+	rm terraform/cloudbuild-iam/storage-bucket-updated.tf
 fi
 
 echo ""

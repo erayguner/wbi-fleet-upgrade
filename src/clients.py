@@ -230,7 +230,9 @@ class WorkbenchRestClient:
         info = (
             upgrade_version
             if upgrade_version
-            else upgrade_info if upgrade_info else "N/A"
+            else upgrade_info
+            if upgrade_info
+            else "N/A"
         )
         return upgradeable, info
 

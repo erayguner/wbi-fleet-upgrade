@@ -221,8 +221,10 @@ class FleetUpgrader:
         self.run_start_time = time.time()
 
         mode = "Single Instance" if instance_id else "Fleet"
-        logger.info(f"Starting {mode} Upgrade: project={self.project_id}, "
-                    f"locations={self.locations}, dry_run={self.dry_run}")
+        logger.info(
+            f"Starting {mode} Upgrade: project={self.project_id}, "
+            f"locations={self.locations}, dry_run={self.dry_run}"
+        )
 
         instances = self.scan(instance_id)
 

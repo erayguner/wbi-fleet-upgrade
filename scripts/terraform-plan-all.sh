@@ -18,31 +18,31 @@ echo ""
 
 # Check if required variables are set
 REQUIRED_VARS=(
-    "PROJECT_ID"
-    "REGION"
+	"PROJECT_ID"
+	"REGION"
 )
 
 MISSING_VARS=()
 for VAR in "${REQUIRED_VARS[@]}"; do
-    if [[ -z "${!VAR:-}" ]]; then
-        MISSING_VARS+=("$VAR")
-    fi
+	if [[ -z "${!VAR:-}" ]]; then
+		MISSING_VARS+=("$VAR")
+	fi
 done
 
 if [[ ${#MISSING_VARS[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}⚠ Missing required environment variables:${NC}"
-    for VAR in "${MISSING_VARS[@]}"; do
-        echo "  - $VAR"
-    done
-    echo ""
-    echo "Example:"
-    echo "  export PROJECT_ID=your-project-id"
-    echo "  export REGION=europe-west2"
-    echo ""
-    echo "Using placeholder values for validation..."
-    export PROJECT_ID="${PROJECT_ID:-placeholder-project}"
-    export REGION="${REGION:-europe-west2}"
-    export PROJECT_NUMBER="${PROJECT_NUMBER:-123456789}"
+	echo -e "${YELLOW}⚠ Missing required environment variables:${NC}"
+	for VAR in "${MISSING_VARS[@]}"; do
+		echo "  - $VAR"
+	done
+	echo ""
+	echo "Example:"
+	echo "  export PROJECT_ID=your-project-id"
+	echo "  export REGION=europe-west2"
+	echo ""
+	echo "Using placeholder values for validation..."
+	export PROJECT_ID="${PROJECT_ID:-placeholder-project}"
+	export REGION="${REGION:-europe-west2}"
+	export PROJECT_NUMBER="${PROJECT_NUMBER:-123456789}"
 fi
 
 echo "Configuration:"
@@ -53,9 +53,9 @@ echo ""
 
 # Terraform modules
 MODULES=(
-    "terraform/cloudbuild-iam"
-    "terraform/artifact-registry"
-    "terraform/artifact-registry-iam"
+	"terraform/cloudbuild-iam"
+	"terraform/artifact-registry"
+	"terraform/artifact-registry-iam"
 )
 
 # Create plans directory
@@ -67,80 +67,80 @@ echo ""
 
 # Generate plan for each module
 for MODULE in "${MODULES[@]}"; do
-    if [[ ! -d "$MODULE" ]]; then
-        echo -e "${YELLOW}⚠ Module not found: $MODULE (skipping)${NC}"
-        continue
-    fi
+	if [[ ! -d "$MODULE" ]]; then
+		echo -e "${YELLOW}⚠ Module not found: $MODULE (skipping)${NC}"
+		continue
+	fi
 
-    MODULE_NAME=$(basename "$MODULE")
-    PLAN_FILE="$PLANS_DIR/${MODULE_NAME}.tfplan"
-    PLAN_JSON="$PLANS_DIR/${MODULE_NAME}.json"
-    PLAN_TEXT="$PLANS_DIR/${MODULE_NAME}.txt"
+	MODULE_NAME=$(basename "$MODULE")
+	PLAN_FILE="$PLANS_DIR/${MODULE_NAME}.tfplan"
+	PLAN_JSON="$PLANS_DIR/${MODULE_NAME}.json"
+	PLAN_TEXT="$PLANS_DIR/${MODULE_NAME}.txt"
 
-    echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
-    echo -e "${BLUE}Planning: $MODULE${NC}"
-    echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
+	echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
+	echo -e "${BLUE}Planning: $MODULE${NC}"
+	echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
 
-    cd "$MODULE"
+	cd "$MODULE"
 
-    # Create tfvars file with placeholder values
-    cat > terraform.tfvars <<EOF
+	# Create tfvars file with placeholder values
+	cat >terraform.tfvars <<EOF
 project_id     = "$PROJECT_ID"
 region         = "$REGION"
 project_number = "${PROJECT_NUMBER:-123456789}"
 EOF
 
-    # Initialize
-    echo "  → Initializing..."
-    if ! terraform init -backend=false > /tmp/tf-init.log 2>&1; then
-        echo -e "${YELLOW}⚠ Init failed, see: /tmp/tf-init.log${NC}"
-        cd - > /dev/null
-        continue
-    fi
+	# Initialize
+	echo "  → Initializing..."
+	if ! terraform init -backend=false >/tmp/tf-init.log 2>&1; then
+		echo -e "${YELLOW}⚠ Init failed, see: /tmp/tf-init.log${NC}"
+		cd - >/dev/null
+		continue
+	fi
 
-    # Generate plan
-    echo "  → Generating plan..."
-    if terraform plan \
-        -input=false \
-        -out="../$PLAN_FILE" \
-        -var-file=terraform.tfvars \
-        > "../$PLAN_TEXT" 2>&1; then
+	# Generate plan
+	echo "  → Generating plan..."
+	if terraform plan \
+		-input=false \
+		-out="../$PLAN_FILE" \
+		-var-file=terraform.tfvars \
+		>"../$PLAN_TEXT" 2>&1; then
 
-        echo -e "  ${GREEN}✓${NC} Plan generated successfully"
+		echo -e "  ${GREEN}✓${NC} Plan generated successfully"
 
-        # Convert to JSON for analysis
-        terraform show -json "../$PLAN_FILE" > "../$PLAN_JSON" 2>/dev/null || true
+		# Convert to JSON for analysis
+		terraform show -json "../$PLAN_FILE" >"../$PLAN_JSON" 2>/dev/null || true
 
-        # Count changes
-        TO_ADD=$(grep -c "will be created" "../$PLAN_TEXT" || echo "0")
-        TO_CHANGE=$(grep -c "will be updated" "../$PLAN_TEXT" || echo "0")
-        TO_DESTROY=$(grep -c "will be destroyed" "../$PLAN_TEXT" || echo "0")
+		# Count changes
+		TO_ADD=$(grep -c "will be created" "../$PLAN_TEXT" || echo "0")
+		TO_CHANGE=$(grep -c "will be updated" "../$PLAN_TEXT" || echo "0")
+		TO_DESTROY=$(grep -c "will be destroyed" "../$PLAN_TEXT" || echo "0")
 
-        echo ""
-        echo "  Changes Summary:"
-        echo "    • Resources to ADD:     $TO_ADD"
-        echo "    • Resources to CHANGE:  $TO_CHANGE"
-        echo "    • Resources to DESTROY: $TO_DESTROY"
-        echo ""
+		echo ""
+		echo "  Changes Summary:"
+		echo "    • Resources to ADD:     $TO_ADD"
+		echo "    • Resources to CHANGE:  $TO_CHANGE"
+		echo "    • Resources to DESTROY: $TO_DESTROY"
+		echo ""
 
-        # Show resource types
-        echo "  Resource Types:"
-        grep "^  # " "../$PLAN_TEXT" | sed 's/^  # /    • /' | head -10
+		# Show resource types
+		echo "  Resource Types:"
+		grep "^  # " "../$PLAN_TEXT" | sed 's/^  # /    • /' | head -10
 
-        if [[ $(grep -c "^  # " "../$PLAN_TEXT") -gt 10 ]]; then
-            echo "    ... and more"
-        fi
+		if [[ $(grep -c "^  # " "../$PLAN_TEXT") -gt 10 ]]; then
+			echo "    ... and more"
+		fi
 
-    else
-        echo -e "  ${YELLOW}⚠${NC} Plan generation had issues"
-        echo "  See: $PLAN_TEXT"
-    fi
+	else
+		echo -e "  ${YELLOW}⚠${NC} Plan generation had issues"
+		echo "  See: $PLAN_TEXT"
+	fi
 
-    # Cleanup
-    rm -f terraform.tfvars
+	# Cleanup
+	rm -f terraform.tfvars
 
-    cd - > /dev/null
-    echo ""
+	cd - >/dev/null
+	echo ""
 done
 
 # Summary
@@ -150,12 +150,12 @@ echo "════════════════════════�
 echo ""
 echo "Generated files:"
 for MODULE in "${MODULES[@]}"; do
-    MODULE_NAME=$(basename "$MODULE")
-    if [[ -f "$PLANS_DIR/${MODULE_NAME}.tfplan" ]]; then
-        echo -e "  ${GREEN}✓${NC} $PLANS_DIR/${MODULE_NAME}.tfplan"
-        echo "    └─ Human-readable: $PLANS_DIR/${MODULE_NAME}.txt"
-        echo "    └─ JSON format:    $PLANS_DIR/${MODULE_NAME}.json"
-    fi
+	MODULE_NAME=$(basename "$MODULE")
+	if [[ -f "$PLANS_DIR/${MODULE_NAME}.tfplan" ]]; then
+		echo -e "  ${GREEN}✓${NC} $PLANS_DIR/${MODULE_NAME}.tfplan"
+		echo "    └─ Human-readable: $PLANS_DIR/${MODULE_NAME}.txt"
+		echo "    └─ JSON format:    $PLANS_DIR/${MODULE_NAME}.json"
+	fi
 done
 
 echo ""

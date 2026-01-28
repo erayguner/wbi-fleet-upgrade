@@ -1,0 +1,110 @@
+# ========================================
+# Docker Build Context Exclusions
+# ========================================
+# Reduces image size and speeds up builds
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+.venv/
+venv/
+ENV/
+env/
+
+# IDE and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# CI/CD
+.gitlab-ci.yml
+.travis.yml
+cloudbuild.yaml
+cloudbuild-*.yaml
+
+# Documentation
+*.md
+!README.md
+docs/
+examples/
+
+# Test files
+tests/
+test_*.py
+*_test.py
+conftest.py
+pytest.ini
+.pytest_cache/
+
+# Terraform
+terraform/
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+
+# Logs and reports
+*.log
+*-report-*.json
+logs/
+reports/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Security sensitive files (DO NOT include in container)
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx
+**/credentials.json
+**/service-account*.json
+**/.env.local
+**/.env.production
+**/.env.staging
+
+# Security reports
+docs/SECURITY*.md
+SECURITY.md
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Cloud Build artifacts
+artifacts/
+
+# Large files that aren't needed in container
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+
+# Development scripts
+setup.sh

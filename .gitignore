@@ -205,8 +205,18 @@ cython_debug/
 *.tfstate.*
 *.tfvars
 .terraform.lock.hcl
+tfplan
+**/tfplan
 .cursorignore
 .cursorindexingignore
+
+# Cloud Function build artifacts
+function-source.zip
+**/function-source.zip
+
+# macOS
+.DS_Store
+**/.DS_Store
 
 # Container and build artifacts
 build-report.json

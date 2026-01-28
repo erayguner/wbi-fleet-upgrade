@@ -18,7 +18,16 @@ A comprehensive, safe, and well-tested tool for automating Vertex AI Workbench i
 - **Ensures safety** with dry-run mode, health checks, and automatic rollback
 - **Provides visibility** with detailed logs and JSON reports
 - **Integrates with CI/CD** via Google Cloud Build
+- **Deploys as serverless API** via Cloud Function (Gen2)
 - **Follows best practices** with least-privilege IAM and structured logging
+
+### Deployment Options
+
+| Option | Best For | Documentation |
+|--------|----------|---------------|
+| **Python CLI** | Local operations, scripting | [Quickstart](QUICKSTART.md) |
+| **Container** | CI/CD pipelines, Cloud Run | [Container Deployment](CONTAINER_README.md) |
+| **Cloud Function** | Serverless API, scheduled triggers | [Cloud Function](docs/CLOUD_FUNCTION_DEPLOYMENT.md) |
 
 ### Key Benefits
 
@@ -37,8 +46,10 @@ A comprehensive, safe, and well-tested tool for automating Vertex AI Workbench i
 - 🔧 **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Problem diagnosis and resolution
 - ☁️ **[Cloud Build Setup](docs/cloud-build.md)** - CI/CD integration
 - 🐳 **[Container Deployment](CONTAINER_README.md)** - Containerized deployment guide
+- ⚡ **[Cloud Function Deployment](docs/CLOUD_FUNCTION_DEPLOYMENT.md)** - Serverless REST API deployment
 - 🚀 **[Release Process](docs/RELEASE_PROCESS.md)** - Automated releases and versioning
 - 🤝 **[Contributing](CONTRIBUTING.md)** - Development and testing
+- 📖 **[Documentation Index](docs/README.md)** - Complete documentation reference
 
 ## Quick Start
 
@@ -277,16 +288,25 @@ python3 main.py --project <project-id> --locations LOCATION \
 
 ```text
 /
-├── fleet_upgrader/         Main Python package
+├── fleet_upgrader/         Main Python package (CLI)
 │   ├── clients.py          API client for Workbench
 │   ├── upgrader.py         Upgrade logic
 │   ├── rollback.py         Rollback logic
 │   ├── models.py           Data structures
 │   ├── config.py           Configuration
 │   └── log_utils.py        Logging setup
-├── main.py                 Python CLI tool (upgrade & rollback)
+├── cloud_function/         Cloud Function deployment
+│   ├── main.py             HTTP entry point
+│   ├── requirements.txt    Dependencies
+│   └── src/                Core modules
+├── terraform/              Infrastructure as Code
+│   ├── cloud-function/     Cloud Function Terraform
+│   ├── cloudbuild-iam/     Cloud Build IAM
+│   └── artifact-registry/  Docker registry
+├── main.py                 Python CLI tool
 ├── wb-upgrade.sh           Bash wrapper for upgrades
 ├── wb-rollback.sh          Bash wrapper for rollback
+├── docs/                   Documentation
 └── tests/                  Unit tests
 ```
 

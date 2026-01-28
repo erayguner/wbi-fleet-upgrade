@@ -1,0 +1,15 @@
+# WBI Fleet Upgrade Cloud Function Dependencies
+# Pin versions for reproducibility and security
+
+# Google Cloud Function Framework
+functions-framework==3.*
+
+# Google Cloud SDK dependencies
+google-auth==2.47.0
+google-api-core==2.29.0
+
+# HTTP requests with authentication
+requests>=2.31.0
+
+# Note: google-cloud-notebooks is NOT needed as we use REST API directly
+# This reduces cold start time and dependency size

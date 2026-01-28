@@ -307,7 +307,8 @@ main() {
 			python_args=$(build_python_args)
 			log "INFO" "Executing: python3 main.py ${python_args}"
 
-			# Execute
+			# Execute (word splitting intentional)
+			# shellcheck disable=SC2086
 			exec python3 main.py ${python_args}
 		else
 			log "ERROR" "No command provided and environment validation failed"

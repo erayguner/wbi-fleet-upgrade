@@ -45,7 +45,7 @@ fi
 
 # Authenticate to Artifact Registry
 echo "🔐 Authenticating to Artifact Registry..."
-gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
 # Step 1: Verify signature
 echo ""

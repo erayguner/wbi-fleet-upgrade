@@ -18,7 +18,6 @@ set -euo pipefail
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLOUD_FUNCTION_DIR="$(dirname "$SCRIPT_DIR")/cloud-function"
 TFVARS_FILE="${SCRIPT_DIR}/terraform.tfvars"
 TFVARS_EXAMPLE="${SCRIPT_DIR}/terraform.tfvars.example"
 

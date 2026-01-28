@@ -319,7 +319,9 @@ display_rollback_warning() {
 	echo ""
 }
 
+# shellcheck disable=SC2317
 cleanup() {
+	# shellcheck disable=SC2015
 	[[ -n "${VIRTUAL_ENV:-}" ]] && deactivate 2>/dev/null || true
 }
 trap cleanup EXIT

@@ -40,7 +40,7 @@ run_check() {
 		if [[ "$allow_failure" == "true" ]]; then
 			echo -e "${YELLOW}⚠ WARNING${NC}"
 			((WARNINGS++))
-			cat /tmp/tf-check-output.log | head -5
+			head -5 /tmp/tf-check-output.log
 			return 0
 		else
 			echo -e "${RED}✗ FAIL${NC}"
@@ -153,9 +153,6 @@ NEW_FILES=(
 
 for FILE in "${NEW_FILES[@]}"; do
 	if [[ -f "$FILE" ]]; then
-		MODULE_DIR=$(dirname "$FILE")
-		FILE_NAME=$(basename "$FILE")
-
 		echo -e "  Testing: ${BLUE}$FILE${NC}"
 
 		# Syntax check
@@ -186,9 +183,9 @@ for MODULE in "${MODULES[@]}"; do
 	MODULE_NAME=$(basename "$MODULE")
 	echo -e "  Generating graph for: ${BLUE}$MODULE_NAME${NC}"
 
-	cd "$MODULE"
-	if terraform graph >/tmp/graph-$MODULE_NAME.dot 2>&1; then
-		echo -e "  ${GREEN}✓${NC} Graph generated: /tmp/graph-$MODULE_NAME.dot"
+	cd "$MODULE" || continue
+	if terraform graph >"/tmp/graph-${MODULE_NAME}.dot" 2>&1; then
+		echo -e "  ${GREEN}✓${NC} Graph generated: /tmp/graph-${MODULE_NAME}.dot"
 	else
 		echo -e "  ${YELLOW}⚠${NC} Could not generate graph"
 	fi

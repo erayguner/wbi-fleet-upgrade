@@ -1,7 +1,7 @@
 #!/bin/bash
 # Cleanup duplicate Terraform files that need to be merged
 
-cd /Users/eray/wbi-fleet-upgrade
+cd /Users/eray/wbi-fleet-upgrade || exit 1
 
 echo "🧹 Cleaning up Terraform duplicate files..."
 echo ""

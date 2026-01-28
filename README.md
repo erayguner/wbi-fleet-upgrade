@@ -1,6 +1,6 @@
 # Vertex AI Workbench Fleet Upgrader
 
-[![Linting and Security](https://github.com/erayguner/wbi-fleet-upgrade/actions/workflows/ci.yml/badge.svg)](https://github.com/erayguner/wbi-fleet-upgrade/actions/workflows/ci.yml)
+[![Static Analysis](https://github.com/erayguner/wbi-fleet-upgrade/actions/workflows/static-analysis.yml/badge.svg)](https://github.com/erayguner/wbi-fleet-upgrade/actions/workflows/static-analysis.yml)
 [![CodeQL](https://github.com/erayguner/wbi-fleet-upgrade/actions/workflows/codeql.yml/badge.svg)](https://github.com/erayguner/wbi-fleet-upgrade/actions/workflows/codeql.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
@@ -528,7 +528,7 @@ pytest tests/ --cov=fleet_upgrader --cov-report=html
 
 ## Requirements
 
-- Python 3.8 or newer
+- Python 3.11 or newer
 - Google Cloud SDK (`gcloud`)
 - Active GCP authentication
 - Notebooks API enabled: [Notebooks API (v2)](https://notebooks.googleapis.com/$discovery/rest?version=v2)
